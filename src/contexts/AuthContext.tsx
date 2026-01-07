@@ -37,7 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 /* ---------------------------------------------
    API CONFIG
 --------------------------------------------- */
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "https://backend-digilocker-3.onrender.com";
 
 const LOGIN_URL = `${API_BASE}/loginWithEmail`;
 const SIGNUP_URL = `${API_BASE}/auth/signup`;
