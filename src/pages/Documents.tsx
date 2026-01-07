@@ -29,12 +29,7 @@ import {
   Tag,
   Calendar,
   Building,
-  ExternalLink,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Minimize2,
-  RotateCw
+  ExternalLink
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -43,7 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { useVault } from '@/contexts/VaultContext';
 import { Document, DocumentCategory, CATEGORY_LABELS } from '@/types/vault';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from 'sonner'; // Already imported
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,234 +82,6 @@ const fileTypeIcons = {
   png: ImageIcon,
   webp: ImageIcon,
   gif: ImageIcon,
-};
-
-// Zoomable Image Component
-const ZoomableImage = ({ src, alt, className = '' }: { 
-  src: string; 
-  alt: string; 
-  className?: string;
-}) => {
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [rotation, setRotation] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  const minScale = 0.5;
-  const maxScale = 4;
-  const scaleStep = 0.2;
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -scaleStep : scaleStep;
-    const newScale = Math.min(maxScale, Math.max(minScale, scale + delta));
-    
-    // Zoom to cursor position
-    if (newScale !== scale) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      const scaleFactor = newScale / scale;
-      const newX = mouseX - (mouseX - position.x) * scaleFactor;
-      const newY = mouseY - (mouseY - position.y) * scaleFactor;
-      
-      setScale(newScale);
-      setPosition({ x: newX, y: newY });
-    }
-  }, [scale, position]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (scale > 1) {
-      e.preventDefault();
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    }
-  }, [scale, position]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isDragging) {
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      setPosition({ x: newX, y: newY });
-    }
-  }, [isDragging, dragStart]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  const handleZoomIn = useCallback(() => {
-    const newScale = Math.min(maxScale, scale + scaleStep);
-    setScale(newScale);
-    // Center the image when zooming in
-    if (newScale > 1) {
-      const container = document.querySelector('.image-container') as HTMLElement;
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        setPosition({
-          x: rect.width / 2 - (rect.width / 2) * (newScale / scale),
-          y: rect.height / 2 - (rect.height / 2) * (newScale / scale)
-        });
-      }
-    }
-  }, [scale]);
-
-  const handleZoomOut = useCallback(() => {
-    const newScale = Math.max(minScale, scale - scaleStep);
-    setScale(newScale);
-    // Reset position when zoomed out completely
-    if (newScale <= 1) {
-      setPosition({ x: 0, y: 0 });
-    }
-  }, [scale]);
-
-  const handleReset = useCallback(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-    setRotation(0);
-  }, []);
-
-  const handleRotate = useCallback(() => {
-    setRotation((prev) => (prev + 90) % 360);
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    if (!isFullscreen) {
-      const elem = document.querySelector('.image-container') as HTMLElement;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      }
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-      setIsFullscreen(false);
-    }
-  }, [isFullscreen]);
-
-  // Listen for fullscreen change
-  useState(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  });
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    
-    const newScale = scale === 1 ? 2 : 1;
-    const scaleFactor = newScale / scale;
-    
-    const newX = mouseX - (mouseX - position.x) * scaleFactor;
-    const newY = mouseY - (mouseY - position.y) * scaleFactor;
-    
-    setScale(newScale);
-    setPosition({ x: newX, y: newY });
-  }, [scale, position]);
-
-  return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg">
-      {/* Image Container */}
-      <div 
-        className={`image-container w-full h-full bg-vault-surface ${isDragging ? 'cursor-grabbing' : scale > 1 ? 'cursor-grab' : 'cursor-default'}`}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        style={{
-          touchAction: 'none',
-          userSelect: 'none'
-        }}
-      >
-        <img
-          src={src}
-          alt={alt}
-          className={`w-full h-full object-contain ${className}`}
-          style={{
-            transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.15s ease-out',
-            transformOrigin: '0 0'
-          }}
-        />
-      </div>
-
-      {/* Zoom Controls */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-lg p-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleZoomOut}
-          disabled={scale <= minScale}
-          className="h-8 w-8 text-white hover:bg-white/20 disabled:opacity-30"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </Button>
-        
-        <div className="flex items-center gap-1 px-2">
-          <span className="text-white text-sm font-medium min-w-[40px] text-center">
-            {Math.round(scale * 100)}%
-          </span>
-        </div>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleZoomIn}
-          disabled={scale >= maxScale}
-          className="h-8 w-8 text-white hover:bg-white/20 disabled:opacity-30"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </Button>
-        
-        <div className="h-6 w-px bg-white/30 mx-1" />
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleRotate}
-          className="h-8 w-8 text-white hover:bg-white/20"
-        >
-          <RotateCw className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleReset}
-          className="h-8 w-8 text-white hover:bg-white/20"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleFullscreen}
-          className="h-8 w-8 text-white hover:bg-white/20"
-        >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </Button>
-      </div>
-
-      {/* Zoom Instructions */}
-      {scale === 1 && (
-        <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
-          Double click or scroll to zoom • Drag to pan when zoomed
-        </div>
-      )}
-    </div>
-  );
 };
 
 export default function Documents() {
@@ -387,13 +154,13 @@ export default function Documents() {
   }, []);
 
   const handleFiles = async (files: File[]) => {
-    // ... (keep the existing handleFiles function code)
     const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
     if (files.length === 0) {
       return;
     }
 
+    // Show loading toast
     const toastId = toast.loading(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}...`);
     
     let successfulUploads = 0;
@@ -401,6 +168,7 @@ export default function Documents() {
 
     try {
       for (const file of files) {
+        // Validate file type
         if (!validTypes.includes(file.type)) {
           failedUploads++;
           toast.error(`${file.name || 'File'} is not a supported file type. Only PDF, JPG, PNG, WebP, and GIF are allowed.`, {
@@ -409,7 +177,8 @@ export default function Documents() {
           continue;
         }
 
-        const maxSize = 20 * 1024 * 1024;
+        // Validate file size (20MB limit)
+        const maxSize = 20 * 1024 * 1024; // 20MB
         if (file.size > maxSize) {
           failedUploads++;
           toast.error(`${file.name || 'File'} is too large. Maximum file size is 20MB.`, {
@@ -418,6 +187,7 @@ export default function Documents() {
           continue;
         }
 
+        // Determine file type
         let fileType: 'pdf' | 'image';
         if (file.type === 'application/pdf') {
           fileType = 'pdf';
@@ -425,6 +195,7 @@ export default function Documents() {
           fileType = 'image';
         }
 
+        // Ensure file name is not empty
         const fileName = file.name || `Document-${Date.now()}`;
 
         try {
@@ -445,6 +216,7 @@ export default function Documents() {
         }
       }
 
+      // Update the loading toast with result
       if (successfulUploads > 0 && failedUploads === 0) {
         toast.success(`Successfully uploaded ${successfulUploads} file${successfulUploads > 1 ? 's' : ''}`, {
           id: toastId,
@@ -503,6 +275,7 @@ export default function Documents() {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const viewUrl = `${apiUrl}/api/documents/${documentId}/view?token=${token}`;
     
+    // Open in new tab with proper dimensions
     const newWindow = window.open(
       viewUrl,
       '_blank',
@@ -664,7 +437,7 @@ export default function Documents() {
                     className="vault-card-hover group"
                   >
                     <div
-                      className="aspect-[4/3] bg-vault-surface rounded-t-lg flex items-center justify-center cursor-pointer overflow-hidden"
+                      className="aspect-[4/3] bg-vault-surface rounded-none flex items-center justify-center cursor-pointer overflow-hidden"
                       onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
                     >
                       {doc.fileType === 'pdf' ? (
@@ -673,7 +446,7 @@ export default function Documents() {
                         <img
                           src={doc.thumbnailUrl || doc.fileUrl}
                           alt={doc.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover"
                         />
                       )}
                     </div>
@@ -701,9 +474,9 @@ export default function Documents() {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}>
+                              <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
-                                Preview
+                                View PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
                                 <Edit className="w-4 h-4 mr-2" />
@@ -800,9 +573,9 @@ export default function Documents() {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}>
+                        <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                           <Eye className="w-4 h-4 mr-2" />
-                          Preview
+                          View PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
                           <Edit className="w-4 h-4 mr-2" />
@@ -878,22 +651,13 @@ export default function Documents() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-5xl h-[90vh]">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedDocument?.name}</span>
-              {selectedDocument?.fileType !== 'pdf' && (
-                <div className="text-sm text-muted-foreground font-normal flex items-center gap-2">
-                  <ZoomIn className="w-4 h-4" />
-                  Scroll to zoom • Double click to toggle
-                </div>
-              )}
-            </DialogTitle>
+            <DialogTitle>{selectedDocument?.name}</DialogTitle>
           </DialogHeader>
           {selectedDocument && (
-            <div className="space-y-4 h-full flex flex-col">
-              {/* Image/PDF Viewer */}
-              <div className="flex-1 min-h-0 bg-vault-surface rounded-lg overflow-hidden">
+            <div className="space-y-4">
+              <div className="aspect-[4/3] bg-vault-surface rounded-lg flex items-center justify-center overflow-hidden">
                 {selectedDocument.fileType === 'pdf' ? (
                   <iframe
                     src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/documents/${selectedDocument.id}/view?token=${localStorage.getItem('vault_token')}`}
@@ -901,120 +665,94 @@ export default function Documents() {
                     title={selectedDocument.name}
                   />
                 ) : (
-                  <ZoomableImage
+                  <img
                     src={selectedDocument.fileUrl}
                     alt={selectedDocument.name}
+                    className="max-w-full max-h-full object-contain"
                   />
                 )}
               </div>
 
-              {/* Document Details */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Document Information</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Tag className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Category:</span>
-                        <span className="font-medium">{CATEGORY_LABELS[selectedDocument.category]}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Uploaded:</span>
-                        <span className="font-medium">{format(new Date(selectedDocument.uploadedAt), 'PPP')}</span>
-                      </div>
-                      {selectedDocument.metadata.issuer && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Issuer:</span>
-                          <span className="font-medium">{selectedDocument.metadata.issuer}</span>
-                        </div>
-                      )}
-                    </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Tag className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium">{CATEGORY_LABELS[selectedDocument.category]}</span>
                   </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Uploaded:</span>
+                    <span className="font-medium">{format(new Date(selectedDocument.uploadedAt), 'PPP')}</span>
+                  </div>
+                  {selectedDocument.metadata.issuer && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Building className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Issuer:</span>
+                      <span className="font-medium">{selectedDocument.metadata.issuer}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">File Details</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Size:</span>
-                        <span className="font-medium">{formatBytes(selectedDocument.size)}</span>
-                      </div>
-                      {selectedDocument.metadata.expiryDate && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Expires:</span>
-                          <span className="font-medium">{format(new Date(selectedDocument.metadata.expiryDate), 'PPP')}</span>
-                        </div>
-                      )}
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Size:</span>
+                    <span className="font-medium">{formatBytes(selectedDocument.size)}</span>
                   </div>
+                  {selectedDocument.metadata.expiryDate && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Expires:</span>
+                      <span className="font-medium">{format(new Date(selectedDocument.metadata.expiryDate), 'PPP')}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Tags and Notes */}
-              <div className="space-y-4">
-                {selectedDocument.tags.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDocument.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary">{tag}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {selectedDocument.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDocument.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              )}
 
-                {selectedDocument.metadata.notes && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Notes</h4>
-                    <div className="bg-vault-surface p-3 rounded-lg">
-                      <p className="text-sm">{selectedDocument.metadata.notes}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {selectedDocument.metadata.notes && (
+                <div className="bg-vault-surface p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                  <p className="text-sm">{selectedDocument.metadata.notes}</p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter className="flex justify-between">
-            {selectedDocument?.fileType === 'pdf' ? (
-              <Button 
-                className='bg-black text-white'
-                variant="outline" 
-                onClick={() => {
-                  if (selectedDocument) {
-                    openPdfInNewTab(selectedDocument.id);
-                  }
-                }}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View in new tab
-              </Button>
-            ) : (
-              <div className="text-xs text-muted-foreground">
-                Use scroll wheel to zoom • Drag to pan when zoomed • Double click to toggle zoom
-              </div>
-            )}
+            <Button 
+            className='bg-black text-white'
+              variant="outline" 
+              onClick={() => {
+                if (selectedDocument) {
+                  openPdfInNewTab(selectedDocument.id);
+                }
+              }}
+              disabled={selectedDocument?.fileType !== 'pdf'}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View document
+            </Button>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  if (selectedDocument) {
-                    const token = localStorage.getItem('vault_token');
-                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                    window.open(`${apiUrl}/api/documents/${selectedDocument.id}/download?token=${token}`, '_blank');
-                  }
-                }}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
               <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
                 Close
               </Button>
+              {/* <Button onClick={() => {
+                if (selectedDocument) {
+                  const token = localStorage.getItem('vault_token');
+                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                  window.open(`${apiUrl}/api/documents/${selectedDocument.id}/download?token=${token}`, '_blank');
+                }
+              }}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button> */}
             </div>
           </DialogFooter>
         </DialogContent>
