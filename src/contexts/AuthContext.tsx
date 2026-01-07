@@ -16,17 +16,16 @@ export interface User {
   storageUsed: number;
   storageLimit: number;
   isGuest: boolean;
-  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, name: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   loginAsGuest: () => void;
-  resetPassword: (email: string) => Promise<boolean>;
+  isAuthenticated: boolean;
 }
 
 /* ---------------------------------------------
@@ -35,24 +34,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /* ---------------------------------------------
-   Constants
+   API CONFIG
 --------------------------------------------- */
-const LOGIN_URL =
-  // "http://localhost:5000/loginWithEmail";
-  "https://dripjerceybackend-production.up.railway.app/loginWithEmail";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const SIGNUP_URL =
-  "https://dripjercey-backend.onrender.com/signup";
+const LOGIN_URL = `${API_BASE}/loginWithEmail`;
+const SIGNUP_URL = `${API_BASE}/auth/signup`;
 
-const RESET_PASSWORD_URL =
-  "https://dripjercey-backend.onrender.com/auth/reset-password";
-
+/* ---------------------------------------------
+   Guest User
+--------------------------------------------- */
 const GUEST_USER: User = {
-  id: "guest-user",
+  id: "guest",
   name: "Guest User",
   email: "guest@vault.app",
   storageUsed: 0,
-  storageLimit: 100 * 1024 * 1024, // 100MB
+  storageLimit: 100 * 1024 * 1024,
   isGuest: true,
 };
 
@@ -64,14 +61,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   /* ---------------------------------------------
-     Load user on app start
+     Restore Session
   --------------------------------------------- */
   useEffect(() => {
-    const savedUser = localStorage.getItem("vault_user");
+    const storedUser = localStorage.getItem("vault_user");
     const token = localStorage.getItem("vault_token");
 
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+    if (storedUser && token) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.clear();
+      }
     }
 
     setIsLoading(false);
@@ -87,24 +88,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const res = await fetch(LOGIN_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
 
-        if (!res.ok) return false;
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: "Login failed" }));
+          const errorMessage = errorData.message || "Invalid credentials";
+          console.error("Login failed:", errorMessage);
+          throw new Error(errorMessage);
+        }
 
         const data = await res.json();
+
+        if (!data.success || !data.token || !data.user) {
+          console.error("Invalid response format:", data);
+          throw new Error("Invalid response from server");
+        }
 
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("vault_user", JSON.stringify(data.user));
 
         setUser(data.user);
         return true;
-      } catch (error) {
-        console.error("Login error:", error);
-        return false;
+      } catch (err: any) {
+        console.error("Login failed:", err);
+        throw err; // Re-throw to let the UI handle it
       } finally {
         setIsLoading(false);
       }
@@ -116,30 +125,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      SIGNUP
   --------------------------------------------- */
   const signup = useCallback(
-    async (email: string, password: string, name: string): Promise<boolean> => {
+    async (name: string, email: string, password: string): Promise<boolean> => {
       try {
         setIsLoading(true);
 
         const res = await fetch(SIGNUP_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password, name }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
         });
 
-        if (!res.ok) return false;
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: "Signup failed" }));
+          const errorMessage = errorData.message || "Signup failed";
+          console.error("Signup failed:", errorMessage);
+          throw new Error(errorMessage);
+        }
 
         const data = await res.json();
+
+        if (!data.success || !data.token || !data.user) {
+          console.error("Invalid response format:", data);
+          throw new Error("Invalid response from server");
+        }
 
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("vault_user", JSON.stringify(data.user));
 
         setUser(data.user);
         return true;
-      } catch (error) {
-        console.error("Signup error:", error);
-        return false;
+      } catch (err: any) {
+        console.error("Signup failed:", err);
+        throw err; // Re-throw to let the UI handle it
       } finally {
         setIsLoading(false);
       }
@@ -160,46 +177,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      GUEST LOGIN
   --------------------------------------------- */
   const loginAsGuest = useCallback(() => {
-    localStorage.setItem("vault_user", JSON.stringify(GUEST_USER));
     localStorage.removeItem("vault_token");
+    localStorage.setItem("vault_user", JSON.stringify(GUEST_USER));
     setUser(GUEST_USER);
   }, []);
 
   /* ---------------------------------------------
-     RESET PASSWORD (OPTIONAL)
+     Context Value
   --------------------------------------------- */
-  const resetPassword = useCallback(async (email: string): Promise<boolean> => {
-    try {
-      const res = await fetch(RESET_PASSWORD_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    login,
+    signup,
+    logout,
+    loginAsGuest,
+    isAuthenticated: !!user && !user.isGuest,
+  };
 
-      return res.ok;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  /* ---------------------------------------------
-     Provider Value
-  --------------------------------------------- */
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        signup,
-        logout,
-        loginAsGuest,
-        resetPassword,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 /* ---------------------------------------------
@@ -208,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used inside AuthProvider");
   }
   return context;
 }

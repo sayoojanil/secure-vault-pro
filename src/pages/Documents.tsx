@@ -79,6 +79,8 @@ const fileTypeIcons = {
   pdf: FileText,
   jpg: ImageIcon,
   png: ImageIcon,
+  webp: ImageIcon,
+  gif: ImageIcon,
 };
 
 export default function Documents() {
@@ -150,48 +152,76 @@ export default function Documents() {
     handleFiles(files);
   }, []);
 
-  const handleFiles = (files: File[]) => {
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+  const handleFiles = async (files: File[]) => {
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     
-    files.forEach(file => {
+    if (files.length === 0) {
+      return;
+    }
+    
+    for (const file of files) {
+      // Validate file type
       if (!validTypes.includes(file.type)) {
-        toast.error(`${file.name} is not a supported file type`);
-        return;
+        toast.error(`${file.name || 'File'} is not a supported file type. Only PDF, JPG, PNG, WebP, and GIF are allowed.`);
+        continue;
       }
       
-      const fileType = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/jpeg' ? 'jpg' : 'png';
+      // Validate file size (20MB limit)
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (file.size > maxSize) {
+        toast.error(`${file.name || 'File'} is too large. Maximum file size is 20MB.`);
+        continue;
+      }
       
-      addDocument({
-        name: file.name,
-        type: fileType === 'pdf' ? 'pdf' : 'image',
-        category: 'other',
-        fileType: fileType as 'pdf' | 'jpg' | 'png',
-        size: file.size,
-        tags: [],
-        metadata: {},
-        fileUrl: URL.createObjectURL(file),
-        isArchived: false,
-        isFavorite: false,
-      });
+      // Determine file type
+      let fileType: 'pdf' | 'image';
+      if (file.type === 'application/pdf') {
+        fileType = 'pdf';
+      } else {
+        fileType = 'image';
+      }
       
-      toast.success(`${file.name} uploaded successfully`);
-    });
+      // Ensure file name is not empty
+      const fileName = file.name || `Document-${Date.now()}`;
+      
+      try {
+        await addDocument(file, {
+          name: fileName,
+          category: 'other',
+          type: fileType,
+          tags: [],
+          metadata: {},
+        });
+      } catch (error: any) {
+        // Error toast is already shown in addDocument
+        console.error('Upload error:', error);
+        // Continue with next file even if one fails
+      }
+    }
     
     setShowUploadDialog(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedDocument) {
-      deleteDocument(selectedDocument.id);
-      toast.success('Document deleted');
-      setShowDeleteDialog(false);
-      setSelectedDocument(null);
+      try {
+        await deleteDocument(selectedDocument.id);
+        setShowDeleteDialog(false);
+        setSelectedDocument(null);
+      } catch (error) {
+        // Error toast is already shown in deleteDocument
+        console.error('Delete error:', error);
+      }
     }
   };
 
-  const handleArchive = (doc: Document) => {
-    archiveDocument(doc.id);
-    toast.success('Document archived');
+  const handleArchive = async (doc: Document) => {
+    try {
+      await archiveDocument(doc.id);
+    } catch (error) {
+      // Error toast is already shown in archiveDocument
+      console.error('Archive error:', error);
+    }
   };
 
   if (isLoading) {
@@ -344,10 +374,18 @@ export default function Documents() {
                     className="vault-card-hover group"
                   >
                     <div 
-                      className="aspect-[4/3] bg-vault-surface rounded-t-lg flex items-center justify-center cursor-pointer"
+                      className="aspect-[4/3] bg-vault-surface rounded-t-lg flex items-center justify-center cursor-pointer overflow-hidden"
                       onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
                     >
-                      <FileIcon className="w-12 h-12 text-muted-foreground" />
+                      {doc.fileType === 'pdf' ? (
+                        <FileIcon className="w-12 h-12 text-muted-foreground" />
+                      ) : (
+                        <img
+                          src={doc.thumbnailUrl || doc.fileUrl}
+                          alt={doc.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
@@ -380,7 +418,9 @@ export default function Documents() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.success('Download started')}>
+                              <DropdownMenuItem onClick={() => {
+                                window.open(doc.fileUrl, '_blank');
+                              }}>
                                 <Download className="w-4 h-4 mr-2" />
                                 Download
                               </DropdownMenuItem>
@@ -453,7 +493,7 @@ export default function Documents() {
                       </Badge>
                     ))}
                     <button
-                      onClick={() => toggleFavorite(doc.id)}
+                      onClick={() => toggleFavorite(doc.id).catch(err => console.error('Toggle favorite error:', err))}
                       className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
                     >
                       <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
@@ -473,7 +513,9 @@ export default function Documents() {
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toast.success('Download started')}>
+                        <DropdownMenuItem onClick={() => {
+                          window.open(doc.fileUrl, '_blank');
+                        }}>
                           <Download className="w-4 h-4 mr-2" />
                           Download
                         </DropdownMenuItem>
@@ -505,7 +547,7 @@ export default function Documents() {
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
             <DialogDescription>
-              Drag and drop files or click to browse. Supports PDF, JPG, and PNG.
+              Drag and drop files or click to browse. Supports PDF, JPG, PNG, WebP, and GIF.
             </DialogDescription>
           </DialogHeader>
           <div
@@ -524,7 +566,7 @@ export default function Documents() {
               type="file"
               id="file-upload"
               className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
               multiple
               onChange={(e) => handleFiles(Array.from(e.target.files || []))}
             />
@@ -533,7 +575,7 @@ export default function Documents() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Maximum file size: 20MB • Supported formats: PDF, JPG, PNG
+            Maximum file size: 20MB • Supported formats: PDF, JPG, PNG, WebP, GIF
           </p>
         </DialogContent>
       </Dialog>
@@ -546,11 +588,19 @@ export default function Documents() {
           </DialogHeader>
           {selectedDocument && (
             <div className="space-y-4">
-              <div className="aspect-[4/3] bg-vault-surface rounded-lg flex items-center justify-center">
+              <div className="aspect-[4/3] bg-vault-surface rounded-lg flex items-center justify-center overflow-hidden">
                 {selectedDocument.fileType === 'pdf' ? (
-                  <FileText className="w-20 h-20 text-muted-foreground" />
+                  <iframe
+                    src={selectedDocument.fileUrl}
+                    className="w-full h-full border-0"
+                    title={selectedDocument.name}
+                  />
                 ) : (
-                  <ImageIcon className="w-20 h-20 text-muted-foreground" />
+                  <img
+                    src={selectedDocument.fileUrl}
+                    alt={selectedDocument.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
                 )}
               </div>
               
@@ -610,7 +660,11 @@ export default function Documents() {
             <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
               Close
             </Button>
-            <Button onClick={() => toast.success('Download started')}>
+            <Button onClick={() => {
+              if (selectedDocument) {
+                window.open(selectedDocument.fileUrl, '_blank');
+              }
+            }}>
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
@@ -627,21 +681,25 @@ export default function Documents() {
           {selectedDocument && (
             <form 
               className="space-y-4"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
-                updateDocument(selectedDocument.id, {
-                  name: formData.get('name') as string,
-                  category: formData.get('category') as DocumentCategory,
-                  tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
-                  metadata: {
-                    ...selectedDocument.metadata,
-                    issuer: formData.get('issuer') as string,
-                    notes: formData.get('notes') as string,
-                  },
-                });
-                toast.success('Document updated');
-                setShowEditDialog(false);
+                try {
+                  await updateDocument(selectedDocument.id, {
+                    name: formData.get('name') as string,
+                    category: formData.get('category') as DocumentCategory,
+                    tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
+                    metadata: {
+                      ...selectedDocument.metadata,
+                      issuer: formData.get('issuer') as string,
+                      notes: formData.get('notes') as string,
+                    },
+                  });
+                  setShowEditDialog(false);
+                } catch (error) {
+                  // Error toast is already shown in updateDocument
+                  console.error('Update error:', error);
+                }
               }}
             >
               <div>

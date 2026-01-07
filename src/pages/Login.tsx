@@ -31,14 +31,17 @@ export default function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
-    const success = await login(data.email, data.password);
-    setIsLoading(false);
-    
-    if (success) {
-      toast.success('Welcome back!');
-      navigate('/dashboard');
-    } else {
-      toast.error('Invalid credentials. Try demo@vault.app / demo123');
+    try {
+      const success = await login(data.email, data.password);
+      
+      if (success) {
+        toast.success('Welcome back!');
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,9 +134,9 @@ export default function Login() {
             </div>
 
             <div className="mt-6 space-y-3">
-              <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
+              {/* <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
                 Use Demo Credentials
-              </Button>
+              </Button> */}
               <Button variant="ghost" className="w-full gap-2" onClick={handleGuestAccess}>
                 <User className="w-4 h-4" />
                 Continue as Guest

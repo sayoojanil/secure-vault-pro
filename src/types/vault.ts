@@ -3,7 +3,7 @@ export interface Document {
   name: string;
   type: 'pdf' | 'image' | 'license' | 'insurance' | 'other';
   category: DocumentCategory;
-  fileType: 'pdf' | 'jpg' | 'png';
+  fileType: 'pdf' | 'jpg' | 'png' | 'webp' | 'gif';
   size: number;
   uploadedAt: Date;
   modifiedAt: Date;

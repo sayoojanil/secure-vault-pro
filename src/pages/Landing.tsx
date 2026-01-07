@@ -120,9 +120,9 @@ export default function Landing() {
               </Link>
             </div>
             
-            <p className="mt-4 text-xs text-muted-foreground">
+            {/* <p className="mt-4 text-xs text-muted-foreground">
               Demo credentials: demo@vault.app / demo123
-            </p>
+            </p> */}
           </motion.div>
           
           {/* Hero Visual */}
