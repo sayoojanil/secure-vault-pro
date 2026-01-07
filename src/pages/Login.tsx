@@ -137,10 +137,10 @@ export default function Login() {
               {/* <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
                 Use Demo Credentials
               </Button> */}
-              <Button variant="ghost" className="w-full gap-2" onClick={handleGuestAccess}>
+              {/* <Button variant="ghost" className="w-full gap-2" onClick={handleGuestAccess}>
                 <User className="w-4 h-4" />
                 Continue as Guest
-              </Button>
+              </Button> */}
             </div>
           </div>
 

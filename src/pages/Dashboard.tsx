@@ -41,19 +41,52 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { documents, activities, stats, isLoading } = useVault();
 
+  // Calculate category counts from documents
+  const getCategoryCounts = () => {
+    const categoryCounts: Record<DocumentCategory, number> = {
+      identity: 0,
+      financial: 0,
+      medical: 0,
+      insurance: 0,
+      legal: 0,
+      personal: 0,
+      travel: 0,
+      other: 0
+    };
+
+    // Filter out archived documents
+    const activeDocuments = documents.filter(d => !d.isArchived);
+    
+    // Count documents per category
+    activeDocuments.forEach(doc => {
+      if (categoryCounts[doc.category] !== undefined) {
+        categoryCounts[doc.category] += 1;
+      }
+    });
+
+    return categoryCounts;
+  };
+
+  const categoryCounts = getCategoryCounts();
   const storagePercent = (stats.used / stats.limit) * 100;
-  const recentDocuments = documents
-    .filter(d => !d.isArchived)
+  
+  // Get active (non-archived) documents for recent, favorite, and expiring
+  const activeDocuments = documents.filter(d => !d.isArchived);
+  
+  const recentDocuments = activeDocuments
     .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
     .slice(0, 4);
   
-  const favoriteDocuments = documents.filter(d => d.isFavorite && !d.isArchived);
+  const favoriteDocuments = activeDocuments.filter(d => d.isFavorite);
   
-  const expiringDocuments = documents.filter(d => {
-    if (!d.metadata.expiryDate || d.isArchived) return false;
+  const expiringDocuments = activeDocuments.filter(d => {
+    if (!d.metadata.expiryDate) return false;
     const expiry = new Date(d.metadata.expiryDate);
     return isAfter(addDays(new Date(), 90), expiry);
   });
+
+  // Calculate total active document count
+  const activeDocumentCount = activeDocuments.length;
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -121,8 +154,8 @@ export default function Dashboard() {
               <FolderOpen className="w-5 h-5 text-secondary-foreground" />
             </div>
             <div>
-              <p className="font-medium">Browse All</p>
-              <p className="text-xs text-muted-foreground">{stats.documentCount} documents</p>
+              <p className="font-medium">All Documents</p>
+              <p className="text-xs text-muted-foreground">{activeDocumentCount} document{activeDocumentCount !== 1 ? 's' : ''}</p>
             </div>
           </Link>
           
@@ -132,7 +165,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="font-medium">Favorites</p>
-              <p className="text-xs text-muted-foreground">{favoriteDocuments.length} items</p>
+              <p className="text-xs text-muted-foreground">{favoriteDocuments.length} item{favoriteDocuments.length !== 1 ? 's' : ''}</p>
             </div>
           </Link>
           
@@ -167,7 +200,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(Object.keys(CATEGORY_LABELS) as DocumentCategory[]).map((category) => {
                 const Icon = categoryIcons[category];
-                const count = stats.categoryBreakdown[category] || 0;
+                const count = categoryCounts[category];
                 
                 return (
                   <Link
@@ -175,9 +208,16 @@ export default function Dashboard() {
                     to={`/documents?category=${category}`}
                     className="vault-card-hover p-4 text-center"
                   >
-                    <Icon className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                    <div className="relative mx-auto mb-2 w-fit">
+                      <Icon className="w-6 h-6 text-muted-foreground" />
+                      {count > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {count}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-medium truncate">{CATEGORY_LABELS[category]}</p>
-                    <p className="text-xs text-muted-foreground">{count} files</p>
+                    <p className="text-xs text-muted-foreground">{count} file{count !== 1 ? 's' : ''}</p>
                   </Link>
                 );
               })}
@@ -185,39 +225,7 @@ export default function Dashboard() {
           </motion.div>
 
           {/* Expiring Soon */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <AlertCircle className="w-4 h-4 text-warning" />
-              <h2 className="font-semibold">Expiring Soon</h2>
-            </div>
-            <div className="vault-card divide-y divide-border">
-              {expiringDocuments.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-sm">
-                  No documents expiring soon
-                </div>
-              ) : (
-                expiringDocuments.slice(0, 3).map((doc) => (
-                  <Link
-                    key={doc.id}
-                    to={`/documents?id=${doc.id}`}
-                    className="p-3 flex items-center gap-3 hover:bg-vault-surface-hover transition-colors"
-                  >
-                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.name}</p>
-                      <p className="text-xs text-warning">
-                        Expires {format(new Date(doc.metadata.expiryDate!), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </motion.div>
+        
         </div>
 
         {/* Recent Documents & Activity */}
@@ -280,6 +288,11 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <h2 className="font-semibold">Recent Activity</h2>
+              {activities.length > 0 && (
+                <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">
+                  {activities.length}
+                </span>
+              )}
             </div>
             <div className="vault-card divide-y divide-border">
               {activities.length === 0 ? (
