@@ -196,3 +196,19 @@ export async function apiGetStats() {
   const data = await res.json();
   return data.data;
 }
+
+// User API
+export async function apiUpdateProfile(data: { name?: string; avatar?: string }) {
+  const res = await fetch(`${API}/api/user/profile`, {
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to update profile");
+  const responseData = await res.json();
+  return responseData.data;
+}

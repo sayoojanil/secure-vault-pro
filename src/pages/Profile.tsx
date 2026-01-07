@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Calendar, Shield, Camera, Save } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Camera, Save, Loader2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,14 +8,22 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVault } from '@/contexts/VaultContext';
+import { apiUpdateProfile } from '@/lib/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { stats } = useVault();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState(user?.name || '');
+
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -25,9 +33,23 @@ export default function Profile() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleSave = () => {
-    toast.success('Profile updated successfully');
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updatedUser = await apiUpdateProfile({ name: name.trim() });
+      updateUser({ name: updatedUser.name });
+      toast.success('Profile updated successfully');
+      setIsEditing(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const storagePercent = (stats.used / stats.limit) * 100;
@@ -47,12 +69,12 @@ export default function Profile() {
           <div className="vault-card p-6 mb-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-3xl font-bold">
+                {/* <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-3xl font-bold">
                   {user?.name?.charAt(0).toUpperCase()}
-                </div>
-                <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center hover:bg-secondary transition-colors">
+                </div> */}
+                {/* <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center hover:bg-secondary transition-colors">
                   <Camera className="w-4 h-4" />
-                </button>
+                </button> */}
               </div>
               
               <div className="flex-1">
@@ -68,8 +90,14 @@ export default function Profile() {
               <Button 
                 variant={isEditing ? 'default' : 'outline'}
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                disabled={isSaving}
               >
-                {isEditing ? (
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : isEditing ? (
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Save
@@ -93,6 +121,7 @@ export default function Profile() {
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      disabled={isSaving}
                     />
                   ) : (
                     <span>{user?.name}</span>

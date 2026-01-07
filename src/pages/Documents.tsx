@@ -1,11 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  Search, 
-  Filter, 
-  Grid, 
-  List, 
+import {
+  Search,
+  Filter,
+  Grid,
+  List,
   Upload,
   X,
   FileText,
@@ -28,7 +28,8 @@ import {
   File,
   Tag,
   Calendar,
-  Building
+  Building,
+  ExternalLink
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,7 @@ const fileTypeIcons = {
 export default function Documents() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { documents, isLoading, deleteDocument, archiveDocument, toggleFavorite, updateDocument, addDocument } = useVault();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | null>(
@@ -102,25 +103,25 @@ export default function Documents() {
   // Filter documents
   const filteredDocuments = useMemo(() => {
     let filtered = documents.filter(d => !d.isArchived);
-    
+
     if (searchParams.get('filter') === 'favorites') {
       filtered = filtered.filter(d => d.isFavorite);
     }
-    
+
     if (selectedCategory) {
       filtered = filtered.filter(d => d.category === selectedCategory);
     }
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(d => 
+      filtered = filtered.filter(d =>
         d.name.toLowerCase().includes(query) ||
         d.tags.some(t => t.toLowerCase().includes(query)) ||
         d.metadata.issuer?.toLowerCase().includes(query)
       );
     }
-    
-    return filtered.sort((a, b) => 
+
+    return filtered.sort((a, b) =>
       new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
     );
   }, [documents, selectedCategory, searchQuery, searchParams]);
@@ -147,32 +148,32 @@ export default function Documents() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   }, []);
 
   const handleFiles = async (files: File[]) => {
     const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-    
+
     if (files.length === 0) {
       return;
     }
-    
+
     for (const file of files) {
       // Validate file type
       if (!validTypes.includes(file.type)) {
         toast.error(`${file.name || 'File'} is not a supported file type. Only PDF, JPG, PNG, WebP, and GIF are allowed.`);
         continue;
       }
-      
+
       // Validate file size (20MB limit)
       const maxSize = 20 * 1024 * 1024; // 20MB
       if (file.size > maxSize) {
         toast.error(`${file.name || 'File'} is too large. Maximum file size is 20MB.`);
         continue;
       }
-      
+
       // Determine file type
       let fileType: 'pdf' | 'image';
       if (file.type === 'application/pdf') {
@@ -180,10 +181,10 @@ export default function Documents() {
       } else {
         fileType = 'image';
       }
-      
+
       // Ensure file name is not empty
       const fileName = file.name || `Document-${Date.now()}`;
-      
+
       try {
         await addDocument(file, {
           name: fileName,
@@ -193,12 +194,10 @@ export default function Documents() {
           metadata: {},
         });
       } catch (error: any) {
-        // Error toast is already shown in addDocument
         console.error('Upload error:', error);
-        // Continue with next file even if one fails
       }
     }
-    
+
     setShowUploadDialog(false);
   };
 
@@ -209,7 +208,6 @@ export default function Documents() {
         setShowDeleteDialog(false);
         setSelectedDocument(null);
       } catch (error) {
-        // Error toast is already shown in deleteDocument
         console.error('Delete error:', error);
       }
     }
@@ -219,8 +217,29 @@ export default function Documents() {
     try {
       await archiveDocument(doc.id);
     } catch (error) {
-      // Error toast is already shown in archiveDocument
       console.error('Archive error:', error);
+    }
+  };
+
+  const openPdfInNewTab = (documentId: string) => {
+    const token = localStorage.getItem('vault_token');
+    if (!token) {
+      toast.error('Authentication required. Please log in again.');
+      return;
+    }
+    
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const viewUrl = `${apiUrl}/api/documents/${documentId}/view?token=${token}`;
+    
+    // Open in new tab with proper dimensions
+    const newWindow = window.open(
+      viewUrl,
+      '_blank',
+      'noopener,noreferrer,width=1200,height=800'
+    );
+    
+    if (!newWindow) {
+      toast.error('Please allow popups to view PDFs in new tab');
     }
   };
 
@@ -242,7 +261,7 @@ export default function Documents() {
   return (
     <div className="min-h-screen bg-vault-surface">
       <Header />
-      
+
       <main className="pt-24 pb-12 container-wide">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -269,7 +288,7 @@ export default function Documents() {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -295,7 +314,7 @@ export default function Documents() {
                 })}
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <div className="flex border border-input rounded-md">
               <button
                 onClick={() => setViewMode('grid')}
@@ -363,7 +382,7 @@ export default function Documents() {
               {filteredDocuments.map((doc) => {
                 const CategoryIcon = categoryIcons[doc.category];
                 const FileIcon = fileTypeIcons[doc.fileType];
-                
+
                 return (
                   <motion.div
                     key={doc.id}
@@ -373,7 +392,7 @@ export default function Documents() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="vault-card-hover group"
                   >
-                    <div 
+                    <div
                       className="aspect-[4/3] bg-vault-surface rounded-t-lg flex items-center justify-center cursor-pointer overflow-hidden"
                       onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
                     >
@@ -403,6 +422,7 @@ export default function Documents() {
                           >
                             <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
                           </button>
+                          
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="p-1 rounded hover:bg-secondary text-muted-foreground">
@@ -410,16 +430,18 @@ export default function Documents() {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}>
+                              <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
-                                View
+                                View PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
-                                window.open(doc.fileUrl, '_blank');
+                                const token = localStorage.getItem('vault_token');
+                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                                window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
                               }}>
                                 <Download className="w-4 h-4 mr-2" />
                                 Download
@@ -429,7 +451,7 @@ export default function Documents() {
                                 <Archive className="w-4 h-4 mr-2" />
                                 Archive
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => { setSelectedDocument(doc); setShowDeleteDialog(true); }}
                               >
@@ -443,7 +465,9 @@ export default function Documents() {
                       <div className="flex items-center gap-2 mt-3">
                         <span className="text-xs text-muted-foreground">{formatBytes(doc.size)}</span>
                         <span className="text-xs text-muted-foreground">•</span>
+                        
                         <span className="text-xs text-muted-foreground">{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
+            
                       </div>
                       {doc.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-3">
@@ -469,7 +493,7 @@ export default function Documents() {
             {filteredDocuments.map((doc) => {
               const CategoryIcon = categoryIcons[doc.category];
               const FileIcon = fileTypeIcons[doc.fileType];
-              
+
               return (
                 <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-vault-surface-hover transition-colors">
                   <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center flex-shrink-0">
@@ -493,7 +517,7 @@ export default function Documents() {
                       </Badge>
                     ))}
                     <button
-                      onClick={() => toggleFavorite(doc.id).catch(err => console.error('Toggle favorite error:', err))}
+                      onClick={() => toggleFavorite(doc.id)}
                       className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
                     >
                       <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
@@ -505,16 +529,18 @@ export default function Documents() {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}>
+                        <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                           <Eye className="w-4 h-4 mr-2" />
-                          View
+                          View PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
-                          window.open(doc.fileUrl, '_blank');
+                          const token = localStorage.getItem('vault_token');
+                          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                          window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
                         }}>
                           <Download className="w-4 h-4 mr-2" />
                           Download
@@ -524,7 +550,7 @@ export default function Documents() {
                           <Archive className="w-4 h-4 mr-2" />
                           Archive
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => { setSelectedDocument(doc); setShowDeleteDialog(true); }}
                         >
@@ -551,9 +577,8 @@ export default function Documents() {
             </DialogDescription>
           </DialogHeader>
           <div
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-              dragActive ? 'border-primary bg-primary/5' : 'border-border'
-            }`}
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-primary bg-primary/5' : 'border-border'
+              }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
@@ -591,7 +616,7 @@ export default function Documents() {
               <div className="aspect-[4/3] bg-vault-surface rounded-lg flex items-center justify-center overflow-hidden">
                 {selectedDocument.fileType === 'pdf' ? (
                   <iframe
-                    src={selectedDocument.fileUrl}
+                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/documents/${selectedDocument.id}/view?token=${localStorage.getItem('vault_token')}`}
                     className="w-full h-full border-0"
                     title={selectedDocument.name}
                   />
@@ -603,7 +628,7 @@ export default function Documents() {
                   />
                 )}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
@@ -639,7 +664,7 @@ export default function Documents() {
                   )}
                 </div>
               </div>
-              
+
               {selectedDocument.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {selectedDocument.tags.map((tag) => (
@@ -647,7 +672,7 @@ export default function Documents() {
                   ))}
                 </div>
               )}
-              
+
               {selectedDocument.metadata.notes && (
                 <div className="bg-vault-surface p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Notes</p>
@@ -656,18 +681,35 @@ export default function Documents() {
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
-              Close
+          <DialogFooter className="flex justify-between">
+            <Button 
+            className='bg-black text-white'
+              variant="outline" 
+              onClick={() => {
+                if (selectedDocument) {
+                  openPdfInNewTab(selectedDocument.id);
+                }
+              }}
+              disabled={selectedDocument?.fileType !== 'pdf'}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View document
             </Button>
-            <Button onClick={() => {
-              if (selectedDocument) {
-                window.open(selectedDocument.fileUrl, '_blank');
-              }
-            }}>
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+                Close
+              </Button>
+              {/* <Button onClick={() => {
+                if (selectedDocument) {
+                  const token = localStorage.getItem('vault_token');
+                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                  window.open(`${apiUrl}/api/documents/${selectedDocument.id}/download?token=${token}`, '_blank');
+                }
+              }}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button> */}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -679,7 +721,7 @@ export default function Documents() {
             <DialogTitle>Edit Document</DialogTitle>
           </DialogHeader>
           {selectedDocument && (
-            <form 
+            <form
               className="space-y-4"
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -697,7 +739,6 @@ export default function Documents() {
                   });
                   setShowEditDialog(false);
                 } catch (error) {
-                  // Error toast is already shown in updateDocument
                   console.error('Update error:', error);
                 }
               }}

@@ -25,6 +25,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   loginAsGuest: () => void;
+  updateUser: (userData: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
@@ -183,6 +184,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /* ---------------------------------------------
+     UPDATE USER
+  --------------------------------------------- */
+  const updateUser = useCallback((userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem("vault_user", JSON.stringify(updatedUser));
+    }
+  }, [user]);
+
+  /* ---------------------------------------------
      Context Value
   --------------------------------------------- */
   const value: AuthContextType = {
@@ -192,6 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signup,
     logout,
     loginAsGuest,
+    updateUser,
     isAuthenticated: !!user && !user.isGuest,
   };
 
