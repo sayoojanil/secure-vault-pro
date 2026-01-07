@@ -193,26 +193,26 @@ export default function Profile() {
                 </Button>
               </div>
               
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <div>
+              {/* <div className="flex items-center justify-between py-3 border-b border-border"> */}
+                {/* <div>
                   <p className="font-medium">Two-Factor Authentication</p>
                   <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
                 </div>
                 <Button variant="outline" size="sm">
                   Enable
-                </Button>
+                </Button> */}
               </div>
               
-              <div className="flex items-center justify-between py-3">
-                <div>
+              {/* <div className="flex items-center justify-between py-3"> */}
+                {/* <div>
                   <p className="font-medium">Active Sessions</p>
                   <p className="text-sm text-muted-foreground">Manage your active sessions</p>
                 </div>
                 <Button variant="outline" size="sm">
                   View
-                </Button>
-              </div>
-            </div>
+                </Button> */}
+              {/* </div> */}
+            {/* </div> */}
           </div>
         </motion.div>
       </main>

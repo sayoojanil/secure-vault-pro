@@ -651,17 +651,17 @@ export default function Documents() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{selectedDocument?.name}</DialogTitle>
           </DialogHeader>
           {selectedDocument && (
             <div className="space-y-4">
-              <div className="aspect-[4/3] bg-vault-surface rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="aspect-[4/3] bg-vault-surface rounded-none flex items-center justify-center overflow-hidden">
                 {selectedDocument.fileType === 'pdf' ? (
                   <iframe
                     src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/documents/${selectedDocument.id}/view?token=${localStorage.getItem('vault_token')}`}
-                    className="w-full h-full border-0"
+                    className="w-1/4 h-1/4 border-0"
                     title={selectedDocument.name}
                   />
                 ) : (
