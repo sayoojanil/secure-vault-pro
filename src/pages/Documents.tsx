@@ -370,7 +370,7 @@ export default function Documents() {
               {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <Button className="gap-2" onClick={() => setShowUploadDialog(true)}>
+          <Button className="gap-2 rounded-full" onClick={() => setShowUploadDialog(true)}>
             <Upload className="w-4 h-4" />
             Upload
           </Button>
@@ -530,7 +530,7 @@ export default function Documents() {
     doc.isFavorite ? "text-foreground" : "text-muted-foreground"
   }`}
 >
-  <Star className={`w-4 h-4 ${doc.isFavorite ? "fill-current" : ""}`} />
+  <Heart className={`w-4 h-4 ${doc.isFavorite ? "fill-current" : ""}`} />
 </button>
 
                           
@@ -543,7 +543,7 @@ export default function Documents() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
-                                View PDF
+                                View Document
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
                                 <Edit className="w-4 h-4 mr-2" />
@@ -642,7 +642,7 @@ export default function Documents() {
               }}
               className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
             >
-              <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -656,7 +656,7 @@ export default function Documents() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
                   <Eye className="w-4 h-4 mr-2" />
-                  View PDF
+                  View Document
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
@@ -732,7 +732,7 @@ export default function Documents() {
               multiple
               onChange={(e) => handleFiles(Array.from(e.target.files || []))}
             />
-            <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>
+            <Button className='rounded-full bg-black text-white hover:bg-gray-600 hover:text-white' variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>
               Select Files
             </Button>
           </div>
