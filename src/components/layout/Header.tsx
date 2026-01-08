@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Menu, X } from 'lucide-react';
+import { LogOut, UserRound, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -65,14 +65,14 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="gap-2">
-                      <User className="w-4 h-4" />
+                      <UserRound className="w-4 h-4" />
                       {user.name}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
+                        <UserRound className="w-4 h-4" />
                         Profile
                       </Link>
                     </DropdownMenuItem>

@@ -27,21 +27,21 @@ const features = [
     title: 'Easy Uploads',
     description: 'Drag and drop files or click to upload. Supports PDF, JPG, and PNG formats.',
   },
-  {
-    icon: Search,
-    title: 'Smart Search',
-    description: 'Find any document instantly with powerful search, filters, and custom tags.',
-  },
-  {
-    icon: Fingerprint,
-    title: 'Access Control',
-    description: 'Your documents are protected with enterprise-grade encryption and access controls.',
-  },
-  {
-    icon: Cloud,
-    title: 'Always Available',
-    description: 'Access your documents from any device, anywhere, anytime with cloud sync.',
-  },
+          // {
+          //   icon: Search,
+          //   title: 'Smart Search',
+          //   description: 'Find any document instantly with powerful search, filters, and custom tags.',
+          // },
+  // {
+  //   icon: Fingerprint,
+  //   title: 'Access Control',
+  //   description: 'Your documents are protected with enterprise-grade encryption and access controls.',
+  // },
+  // {
+  //   icon: Cloud,
+  //   title: 'Always Available',
+  //   description: 'Access your documents from any device, anywhere, anytime with cloud sync.',
+  // },
   {
     icon: Eye,
     title: 'Quick Preview',
@@ -109,7 +109,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/signup">
                 <Button size="lg" className="gap-2 px-8">
-                  Get Started Free
+                  Create your account
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -280,14 +280,14 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/signup">
                 <Button size="lg" variant="secondary" className="gap-2 px-8">
-                  Create Free Account
+                  Create  Account
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <Link to="/login">
-                <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+                {/* <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
                   Try Demo
-                </Button>
+                </Button> */}
               </Link>
             </div>
           </motion.div>

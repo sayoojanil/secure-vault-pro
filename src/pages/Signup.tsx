@@ -28,7 +28,7 @@ const benefits = [
   '1 GB secure storage',
   'Unlimited document uploads',
   'Advanced search & filters',
-  'Document expiry reminders',
+  // 'Document expiry reminders',
 ];
 
 export default function Signup() {

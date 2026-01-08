@@ -29,7 +29,12 @@ import {
   Tag,
   Calendar,
   Building,
-  ExternalLink
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCw
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -38,7 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import { useVault } from '@/contexts/VaultContext';
 import { Document, DocumentCategory, CATEGORY_LABELS } from '@/types/vault';
 import { format } from 'date-fns';
-import { toast } from 'sonner'; // Already imported
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +58,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -64,6 +70,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DocumentCardSkeleton } from '@/components/ui/skeleton-custom';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Slider,
+} from '@/components/ui/slider';
 
 const categoryIcons: Record<DocumentCategory, React.ComponentType<{ className?: string }>> = {
   identity: User,
@@ -89,7 +104,7 @@ export default function Documents() {
   const { documents, isLoading, deleteDocument, archiveDocument, toggleFavorite, updateDocument, addDocument } = useVault();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | null>(
     searchParams.get('category') as DocumentCategory | null
   );
@@ -99,6 +114,33 @@ export default function Documents() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoomImageSrc, setZoomImageSrc] = useState<string>('');
+  const [zoomImageName, setZoomImageName] = useState<string>('');
+
+  const handleToggleFavorite = (docId: string, isFavorite: boolean) => {
+    toggleFavorite(docId);
+
+    toast.success( 
+      isFavorite ? "Removed from favorites" : "Added to favorites",
+      {
+        description: isFavorite
+          ? "This document is no longer starred."
+          : "This document has been starred.",
+      }
+    );
+  };
+
+  const handleImageZoom = (imageSrc: string, imageName: string) => {
+    setZoomImageSrc(imageSrc);
+    setZoomImageName(imageName);
+    setZoomLevel(100);
+    setRotation(0);
+    setShowZoomModal(true);
+  };
 
   // Filter documents
   const filteredDocuments = useMemo(() => {
@@ -240,19 +282,32 @@ export default function Documents() {
   };
 
   const handleDelete = async () => {
-    if (selectedDocument) {
-      try {
-        const toastId = toast.loading('Deleting document...');
-        await deleteDocument(selectedDocument.id);
-        toast.success('Document deleted successfully', { id: toastId });
-        setShowDeleteDialog(false);
-        setSelectedDocument(null);
-      } catch (error) {
-        toast.error('Failed to delete document');
-        console.error('Delete error:', error);
-      }
-    }
-  };
+  if (!selectedDocument) return;
+
+  try {
+    const toastId = toast.loading('Deleting document...', {
+      description: selectedDocument.name,
+    });
+
+    await deleteDocument(selectedDocument.id);
+
+    toast.success('Document deleted successfully', {
+      id: toastId,
+      // description: selectedDocument.name,
+            description: `${selectedDocument.name} has been permanently deleted.`,
+
+    });
+
+    setShowDeleteDialog(false);
+    setSelectedDocument(null);
+  } catch (error) {
+    toast.error('Failed to delete document', {
+      description: selectedDocument?.name,
+    });
+    console.error('Delete error:', error);
+  }
+};
+
 
   const handleArchive = async (doc: Document) => {
     try {
@@ -361,16 +416,19 @@ export default function Documents() {
 
             <div className="flex border border-input rounded-md">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 ${viewMode === 'list' ? 'bg-secondary' : ''}`}
               >
                 <List className="w-4 h-4" />
+                
+              </button>
+              
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
+              >
+                 <Grid className="w-4 h-4" />
+               
               </button>
             </div>
           </div>
@@ -446,7 +504,13 @@ export default function Documents() {
                         <img
                           src={doc.thumbnailUrl || doc.fileUrl}
                           alt={doc.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover cursor-zoom-in"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (doc.fileType !== 'pdf') {
+                              handleImageZoom(doc.thumbnailUrl || doc.fileUrl, doc.name);
+                            }
+                          }}
                         />
                       )}
                     </div>
@@ -460,12 +524,15 @@ export default function Documents() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleFavorite(doc.id)}
-                            className={`p-1 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
-                          >
-                            <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
-                          </button>
+                         <button
+  onClick={() => handleToggleFavorite(doc.id, doc.isFavorite)}
+  className={`p-1 rounded hover:bg-secondary ${
+    doc.isFavorite ? "text-foreground" : "text-muted-foreground"
+  }`}
+>
+  <Star className={`w-4 h-4 ${doc.isFavorite ? "fill-current" : ""}`} />
+</button>
+
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -528,87 +595,113 @@ export default function Documents() {
               })}
             </AnimatePresence>
           </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="vault-card divide-y divide-border"
-          >
-            {filteredDocuments.map((doc) => {
-              const CategoryIcon = categoryIcons[doc.category];
-              const FileIcon = fileTypeIcons[doc.fileType];
+      ) : (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="vault-card divide-y divide-border"
+  >
+    {filteredDocuments.map((doc) => {
+      const CategoryIcon = categoryIcons[doc.category];
+      const FileIcon = fileTypeIcons[doc.fileType];
 
-              return (
-                <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-vault-surface-hover transition-colors">
-                  <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center flex-shrink-0">
-                    <FileIcon className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{doc.name}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <CategoryIcon className="w-3 h-3" />
-                        {CATEGORY_LABELS[doc.category]}
-                      </span>
-                      <span>{formatBytes(doc.size)}</span>
-                      <span>{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {doc.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs hidden sm:inline-flex">
-                        {tag}
-                      </Badge>
-                    ))}
-                    <button
-                      onClick={() => toggleFavorite(doc.id)}
-                      className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
-                    >
-                      <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
-                    </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-2 rounded hover:bg-secondary text-muted-foreground">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setSelectedDocument(doc); setShowEditDialog(true); }}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          const token = localStorage.getItem('vault_token');
-                          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                          window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
-                        }}>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleArchive(doc)}>
-                          <Archive className="w-4 h-4 mr-2" />
-                          Archive
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => { setSelectedDocument(doc); setShowDeleteDialog(true); }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              );
-            })}
-          </motion.div>
-        )}
+      return (
+        <div 
+          key={doc.id} 
+          className="flex items-center gap-4 p-4 hover:bg-vault-surface-hover transition-colors cursor-pointer"
+          onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
+        >
+          <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center flex-shrink-0">
+            <FileIcon className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{doc.name}</p>
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+            {/* <p className="font-medium text-sm truncate">{doc.fileType}</p> */}
+
+              <span className="flex items-center gap-1">
+                <CategoryIcon className="w-3 h-3" />
+                {CATEGORY_LABELS[doc.category]}
+              </span>
+              <span>{formatBytes(doc.size)}</span>
+              <span>{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {doc.tags.slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs hidden sm:inline-flex">
+                {tag}
+              </Badge>
+            ))}
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering the row click
+                toggleFavorite(doc.id);
+                handleToggleFavorite(doc.id, doc.isFavorite);
+
+              }}
+              className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="p-2 rounded hover:bg-secondary text-muted-foreground"
+                  onClick={(e) => e.stopPropagation()} // Prevent triggering the row click
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDocument(doc);
+                  setShowEditDialog(true);
+                }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  const token = localStorage.getItem('vault_token');
+                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                  window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
+                }}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  handleArchive(doc);
+                }}>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDocument(doc);
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      );
+    })}
+  </motion.div>
+)}
       </main>
 
       {/* Upload Dialog */}
@@ -668,7 +761,13 @@ export default function Documents() {
                   <img
                     src={selectedDocument.fileUrl}
                     alt={selectedDocument.name}
-                    className="max-w-full max-h-full object-contain"
+                    className="max-w-full max-h-full object-contain cursor-zoom-in"
+                    onClick={(e) => {
+                      if (selectedDocument.fileType !== 'pdf') {
+                        handleImageZoom(selectedDocument.fileUrl, selectedDocument.name);
+                        setShowPreviewDialog(false);
+                      }
+                    }}
                   />
                 )}
               </div>
@@ -743,16 +842,6 @@ export default function Documents() {
               <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
                 Close
               </Button>
-              {/* <Button onClick={() => {
-                if (selectedDocument) {
-                  const token = localStorage.getItem('vault_token');
-                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                  window.open(`${apiUrl}/api/documents/${selectedDocument.id}/download?token=${token}`, '_blank');
-                }
-              }}>
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button> */}
             </div>
           </DialogFooter>
         </DialogContent>
@@ -782,7 +871,6 @@ export default function Documents() {
                       notes: formData.get('notes') as string,
                     },
                   });
-                  toast.success('Document updated successfully', { id: toastId });
                   setShowEditDialog(false);
                 } catch (error) {
                   toast.error('Failed to update document', { id: toastId });
@@ -820,10 +908,13 @@ export default function Documents() {
                 <Textarea id="notes" name="notes" defaultValue={selectedDocument.metadata.notes || ''} className="mt-1.5" rows={3} />
               </div>
               <DialogFooter>
+                
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+              <br/>
+
+                <Button type="submit">Update document</Button>
               </DialogFooter>
             </form>
           )}
@@ -847,6 +938,180 @@ export default function Documents() {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Zoom Modal for Images */}
+      <Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-0 border-0 bg-black/95">
+          <div className="relative w-full h-full">
+            {/* Image Container */}
+            <div className="flex items-center justify-center w-full h-full p-4">
+              <div className="relative overflow-auto max-w-full max-h-full">
+                <motion.img
+                  src={zoomImageSrc}
+                  alt={zoomImageName}
+                  className="origin-center select-none"
+                  style={{
+                    scale: zoomLevel / 100,
+                    rotate: `${rotation}deg`,
+                    maxWidth: isFullscreen ? '100vw' : 'none',
+                    maxHeight: isFullscreen ? '100vh' : 'none',
+                    cursor: zoomLevel > 100 ? 'grab' : 'default',
+                  }}
+                  drag={zoomLevel > 100}
+                  dragConstraints={{
+                    left: -100,
+                    right: 100,
+                    top: -100,
+                    bottom: 100,
+                  }}
+                  dragElastic={0.2}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: zoomLevel / 100 }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+            </div>
+
+            {/* Top Controls */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm rounded-full px-4 py-2">
+              <p className="text-white text-sm font-medium truncate max-w-xs">
+                {zoomImageName}
+              </p>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/70 backdrop-blur-sm rounded-full px-6 py-3">
+              {/* Zoom Out */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white hover:bg-white/20"
+                      onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
+                      disabled={zoomLevel <= 50}
+                    >
+                      <ZoomOut className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Zoom Out</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Zoom Slider */}
+              <div className="flex items-center gap-3 w-48">
+                <span className="text-white text-sm w-12">{zoomLevel}%</span>
+                <Slider
+                  value={[zoomLevel]}
+                  onValueChange={([value]) => setZoomLevel(value)}
+                  min={50}
+                  max={300}
+                  step={10}
+                  className="flex-1"
+                />
+              </div>
+
+              {/* Zoom In */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white hover:bg-white/20"
+                      onClick={() => setZoomLevel(prev => Math.min(300, prev + 25))}
+                      disabled={zoomLevel >= 300}
+                    >
+                      <ZoomIn className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Zoom In</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Rotation */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white hover:bg-white/20"
+                      onClick={() => setRotation(prev => (prev + 90) % 360)}
+                    >
+                      <RotateCw className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Rotate 90°</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Fullscreen Toggle */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white hover:bg-white/20"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="h-5 w-5" />
+                      ) : (
+                        <Maximize2 className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Reset */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white hover:bg-white/20"
+                      onClick={() => {
+                        setZoomLevel(100);
+                        setRotation(0);
+                      }}
+                    >
+                      <span className="text-sm font-medium">100%</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset to default</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Close Button */}
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 h-10 w-10 text-white hover:bg-white/20"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </DialogClose>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

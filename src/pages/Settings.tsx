@@ -49,6 +49,8 @@ export default function Settings() {
     language: 'en',
   });
 
+
+
   const handleSettingChange = (key: string, value: boolean | string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     toast.success('Settings updated');
@@ -76,20 +78,20 @@ export default function Settings() {
           <h1 className="text-2xl font-bold mb-8">Settings</h1>
 
           {/* Notifications */}
-          <div className="vault-card p-6 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+          {/* <div className="vault-card p-6 mb-6">
+            <div className="flex items-center gap-3 mb-6"> */}
+              {/* <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                 <Bell className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-semibold">Notifications</h3>
                 <p className="text-sm text-muted-foreground">Manage how you receive updates</p>
-              </div>
-            </div>
+              </div> */}
+            {/* </div> */}
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <div className="flex items-center gap-3">
+            {/* <div className="space-y-4"> */}
+              {/* <div className="flex items-center justify-between py-3 border-b border-border"> */}
+                {/* <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <Label>Email Notifications</Label>
@@ -99,11 +101,11 @@ export default function Settings() {
                 <Switch
                   checked={settings.emailNotifications}
                   onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
-                />
-              </div>
+                /> */}
+              {/* </div> */}
               
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <div className="flex items-center gap-3">
+              {/* < className="flex items-center justify-between py-3 border-b border-border"> */}
+                {/* <div className="flex items-center gap-3">
                   <Smartphone className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <Label>Push Notifications</Label>
@@ -113,10 +115,10 @@ export default function Settings() {
                 <Switch
                   checked={settings.pushNotifications}
                   onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
-                />
-              </div>
+                /> */}
               
-              <div className="flex items-center justify-between py-3 border-b border-border">
+              
+              {/* <div className="flex items-center justify-between py-3 border-b border-border">
                 <div className="flex items-center gap-3">
                   <Bell className="w-4 h-4 text-muted-foreground" />
                   <div>
@@ -128,10 +130,10 @@ export default function Settings() {
                   checked={settings.expiryReminders}
                   onCheckedChange={(checked) => handleSettingChange('expiryReminders', checked)}
                 />
-              </div>
+              </div> */}
               
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
+              {/* <div className="flex items-center justify-between py-3"> */}
+                {/* <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <Label>Weekly Digest</Label>
@@ -141,10 +143,10 @@ export default function Settings() {
                 <Switch
                   checked={settings.weeklyDigest}
                   onCheckedChange={(checked) => handleSettingChange('weeklyDigest', checked)}
-                />
-              </div>
-            </div>
-          </div>
+                /> */}
+              {/* </div> */}
+            {/* </div>
+          </div> */}
 
           {/* Appearance */}
           <div className="vault-card p-6 mb-6">
@@ -245,7 +247,7 @@ export default function Settings() {
           </div>
 
           {/* Data Management */}
-          <div className="vault-card p-6">
+          {/* <div className="vault-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                 <Download className="w-5 h-5" />
@@ -279,7 +281,7 @@ export default function Settings() {
                 </Button>
               </div>
             </div>
-          </div>
+          </div> */}
         </motion.div>
       </main>
 

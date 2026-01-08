@@ -5,7 +5,6 @@ import {
   FolderOpen, 
   Clock, 
   Star, 
-  AlertCircle,
   ArrowUpRight,
   FileText,
   CreditCard,

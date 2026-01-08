@@ -49,6 +49,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(true);
 
+  
+
   // Transform backend document to frontend format
   const transformDocument = (doc: any): Document => {
     return {
@@ -222,28 +224,37 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, user?.isGuest, fetchStats, fetchActivities]);
 
   // Update document
-  const updateDocument = useCallback(async (id: string, updates: Partial<Document>) => {
-    if (!isAuthenticated || user?.isGuest) {
-      toast.error('Please sign in to update documents');
-      return;
-    }
+ const updateDocument = useCallback(async (id: string, updates: Partial<Document>) => {
+  if (!isAuthenticated || user?.isGuest) {
+    toast.error('Please sign in to update documents');
+    return;
+  }
 
-    try {
-      const updatedDoc = await apiUpdateDocument(id, updates);
-      const transformedDoc = transformDocument(updatedDoc);
-      
-      setDocuments(prev =>
-        prev.map(doc => doc.id === id ? transformedDoc : doc)
-      );
-      
-      await fetchActivities();
-      toast.success('Document updated successfully');
-    } catch (error: any) {
-      console.error('Error updating document:', error);
-      toast.error('Failed to update document');
-      throw error;
-    }
-  }, [isAuthenticated, user?.isGuest, fetchActivities]);
+  // 🔹 Get existing document name BEFORE update
+  const existingDoc = documents.find(doc => doc.id === id);
+  const documentName = updates.name || existingDoc?.name || 'Document';
+
+  try {
+    const updatedDoc = await apiUpdateDocument(id, updates);
+    const transformedDoc = transformDocument(updatedDoc);
+
+    setDocuments(prev =>
+      prev.map(doc => doc.id === id ? transformedDoc : doc)
+    );
+
+    await fetchActivities();
+
+    toast.success('Document updated', {
+      description: `"${documentName}" has been updated successfully.`,
+    });
+
+  } catch (error: any) {
+    console.error('Error updating document:', error);
+    toast.error('Failed to update document');
+    throw error;
+  }
+}, [isAuthenticated, user?.isGuest, documents, fetchActivities]);
+
 
   // Delete document
   const deleteDocument = useCallback(async (id: string) => {
@@ -260,7 +271,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       await fetchStats();
       await fetchActivities();
       
-      toast.success('Document deleted successfully');
+      // toast.success('Document deleted successfully');
     } catch (error: any) {
       console.error('Error deleting document:', error);
       toast.error('Failed to delete document');
