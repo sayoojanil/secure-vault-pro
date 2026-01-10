@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL || "https://backend-digilocker-3.onrender.com";
+const API = import.meta.env.VITE_API_URL;
 
 // Get auth token from localStorage
 const getAuthToken = () => {
