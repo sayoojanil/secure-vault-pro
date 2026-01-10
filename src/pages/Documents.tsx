@@ -79,6 +79,8 @@ import {
 import {
   Slider,
 } from '@/components/ui/slider';
+import { VerifyBadge } from "@/components/ui/verify-badge";
+
 
 const categoryIcons: Record<DocumentCategory, React.ComponentType<{ className?: string }>> = {
   identity: User,
@@ -517,7 +519,11 @@ export default function Documents() {
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{doc.name}</p>
+                          <div className="flex items-center gap-2">
+  <p className="font-medium text-sm truncate">{doc.name}</p>
+  <VerifyBadge verified={doc.isVerified ?? true} />
+</div>
+
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             <CategoryIcon className="w-3 h-3" />
                             <span>{CATEGORY_LABELS[doc.category]}</span>
@@ -615,7 +621,12 @@ export default function Documents() {
             <FileIcon className="w-5 h-5 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{doc.name}</p>
+            {/* <p className="font-medium text-sm truncate">{doc.name}</p> */}
+            <div className="flex items-center gap-2">
+  <p className="font-medium text-sm truncate">{doc.name}</p>
+  <VerifyBadge verified={doc.isVerified ?? true} />
+</div>
+
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
             {/* <p className="font-medium text-sm truncate">{doc.fileType}</p> */}
 
@@ -629,7 +640,7 @@ export default function Documents() {
           </div>
           <div className="flex items-center gap-2">
             {doc.tags.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs hidden sm:inline-flex">
+              <Badge key={tag} variant="ghost" className="text-xs hidden sm:inline-flex">
                 {tag}
               </Badge>
             ))}

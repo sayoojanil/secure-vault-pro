@@ -11,6 +11,7 @@ import { useVault } from '@/contexts/VaultContext';
 import { apiUpdateProfile } from '@/lib/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { TrustedBadge } from '@/components/ui/trusted-user';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -78,7 +79,11 @@ export default function Profile() {
               </div>
               
               <div className="flex-1">
-                <h2 className="text-xl font-semibold">{user?.name}</h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-xl font-semibold">{user?.name}</h2>
+                  <TrustedBadge trusted={user?.isTrusted} />
+                </div>
+                
                 <p className="text-muted-foreground">{user?.email}</p>
                 {user?.isGuest && (
                   <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-secondary text-secondary-foreground text-xs font-medium rounded-full">
@@ -104,6 +109,7 @@ export default function Profile() {
                   </>
                 ) : 'Edit Profile'}
               </Button>
+              
             </div>
           </div>
 
@@ -186,7 +192,7 @@ export default function Profile() {
               <div className="flex items-center justify-between py-3 border-b border-border">
                 <div>
                   <p className="font-medium">Password</p>
-                  <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
+                  <p className="text-sm text-muted-foreground">Change your password</p>
                 </div>
                 <Button variant="outline" size="sm">
                   Change

@@ -14,11 +14,14 @@ import {
   Folder,
   Plane,
   File,
-  User
+  User,
+  CircleCheck,
+  Archive
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVault } from '@/contexts/VaultContext';
 import { DocumentCategory, CATEGORY_LABELS } from '@/types/vault';
@@ -35,6 +38,20 @@ const categoryIcons: Record<DocumentCategory, React.ComponentType<{ className?: 
   travel: Plane,
   other: File,
 };
+
+export function VerifyBadge({ verified }: { verified?: boolean }) {
+  if (!verified) return null;
+
+  return (
+    <Badge
+      variant="link"
+      className="gap-1 text-xs text-green-600 border-none bg-green-500 text-white"
+    >
+      Verified
+      <CircleCheck className="w-4 h-4" />
+    </Badge>
+  );
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -71,6 +88,7 @@ export default function Dashboard() {
   
   // Get active (non-archived) documents for recent, favorite, and expiring
   const activeDocuments = documents.filter(d => !d.isArchived);
+  const archivedDocuments = documents.filter(d => d.isArchived);
   
   const recentDocuments = activeDocuments
     .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
@@ -127,7 +145,7 @@ export default function Dashboard() {
           <p className="text-muted-foreground">
             {user?.isGuest 
               ? 'You are viewing as a guest. Sign up to save your documents.' 
-              : "Here's an overview of your secure vault."}
+              : "Here's an overview of your Cloud vault."}
           </p>
         </motion.div>
 
@@ -140,7 +158,7 @@ export default function Dashboard() {
         >
           <Link to="/documents?action=upload" className="vault-card-hover p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Upload className="w-5 h-5 text-primary-foreground " />
+              <Upload className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <p className="font-medium">Upload Document</p>
@@ -152,8 +170,11 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
               <FolderOpen className="w-5 h-5 text-secondary-foreground" />
             </div>
-            <div>
-              <p className="font-medium">All Documents</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="font-medium">All Documents</p>
+                <VerifyBadge verified={user?.verified || activeDocumentCount > 0} />
+              </div>
               <p className="text-xs text-muted-foreground">{activeDocumentCount} document{activeDocumentCount !== 1 ? 's' : ''}</p>
             </div>
           </Link>
@@ -167,7 +188,25 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground">{favoriteDocuments.length} item{favoriteDocuments.length !== 1 ? 's' : ''}</p>
             </div>
           </Link>
-          
+
+          <Link to="/documents?filter=archived" className="vault-card-hover p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+              <Archive className="w-5 h-5 text-secondary-foreground" />
+            </div>
+            <div>
+              <p className="font-medium">Archived</p>
+              <p className="text-xs text-muted-foreground">{archivedDocuments.length} document{archivedDocuments.length !== 1 ? 's' : ''}</p>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Storage Info Card - Moved to separate row for better layout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8"
+        >
           <div className="vault-card p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Storage</span>
@@ -223,9 +262,126 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Expiring Soon */}
-        
+          {/* Expiring Soon Section - Re-added with updated content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Expiring Soon</h2>
+              <Link to="/documents?filter=expiring" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                View all <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="vault-card">
+              {expiringDocuments.length === 0 ? (
+                <div className="p-6 text-center">
+                  <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No expiring documents</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {expiringDocuments.slice(0, 3).map((doc) => {
+                    const CategoryIcon = categoryIcons[doc.category];
+                    const expiryDate = new Date(doc.metadata.expiryDate!);
+                    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    return (
+                      <Link
+                        key={doc.id}
+                        to={`/documents?id=${doc.id}`}
+                        className="p-3 flex items-center justify-between hover:bg-vault-surface-hover transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center">
+                            <CategoryIcon className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium truncate max-w-[150px]">{doc.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Expires {format(expiryDate, 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant={daysUntilExpiry <= 30 ? "destructive" : "outline"}>
+                          {daysUntilExpiry <= 0 ? 'Expired' : `${daysUntilExpiry}d`}
+                        </Badge>
+                      </Link>
+                    );
+                  })}
+                  {expiringDocuments.length > 3 && (
+                    <div className="p-3 text-center">
+                      <Link to="/documents?filter=expiring" className="text-sm text-muted-foreground hover:text-foreground">
+                        +{expiringDocuments.length - 3} more expiring
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
+
+        {/* Archived Documents Section */}
+        {archivedDocuments.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mt-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Archive className="w-4 h-4 text-muted-foreground" />
+                <h2 className="font-semibold">Archived Documents</h2>
+                <Badge variant="outline" className="ml-2">
+                  {archivedDocuments.length}
+                </Badge>
+              </div>
+              <Link to="/documents?filter=archived" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                Manage all <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="vault-card">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                {archivedDocuments.slice(0, 3).map((doc) => {
+                  const CategoryIcon = categoryIcons[doc.category];
+                  return (
+                    <Link
+                      key={doc.id}
+                      to={`/documents?id=${doc.id}`}
+                      className="p-3 flex items-center gap-3 hover:bg-vault-surface-hover transition-colors rounded-lg border border-border"
+                    >
+                      <div className="w-10 h-10 rounded bg-secondary/50 flex items-center justify-center flex-shrink-0">
+                        <CategoryIcon className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {CATEGORY_LABELS[doc.category]}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground">
+                            Archived {formatDistanceToNow(new Date(doc.metadata.archivedAt || doc.updatedAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+                {archivedDocuments.length > 3 && (
+                  <div className="col-span-full text-center p-3">
+                    <Link to="/documents?filter=archived" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                      View all {archivedDocuments.length} archived documents
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Recent Documents & Activity */}
         <div className="grid gap-6 lg:grid-cols-2 mt-6">
@@ -265,7 +421,10 @@ export default function Dashboard() {
                         <CategoryIcon className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{doc.name}</p>
+                          {doc.verified && <VerifyBadge verified={true} />}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {formatBytes(doc.size)} • {format(new Date(doc.uploadedAt), 'MMM d, yyyy')}
                         </p>
@@ -307,7 +466,7 @@ export default function Dashboard() {
                       {activity.action === 'download' && <ArrowUpRight className="w-4 h-4 rotate-180" />}
                       {activity.action === 'delete' && <File className="w-4 h-4" />}
                       {activity.action === 'rename' && <FileText className="w-4 h-4" />}
-                      {activity.action === 'archive' && <Folder className="w-4 h-4" />}
+                      {activity.action === 'archive' && <Archive className="w-4 h-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">

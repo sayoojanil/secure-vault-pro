@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/contexts/AuthContext'; // Assuming you have an auth hook
 
 const features = [
   {
@@ -27,21 +28,6 @@ const features = [
     title: 'Easy Uploads',
     description: 'Drag and drop files or click to upload. Supports PDF, JPG, and PNG formats.',
   },
-          // {
-          //   icon: Search,
-          //   title: 'Smart Search',
-          //   description: 'Find any document instantly with powerful search, filters, and custom tags.',
-          // },
-  // {
-  //   icon: Fingerprint,
-  //   title: 'Access Control',
-  //   description: 'Your documents are protected with enterprise-grade encryption and access controls.',
-  // },
-  // {
-  //   icon: Cloud,
-  //   title: 'Always Available',
-  //   description: 'Access your documents from any device, anywhere, anytime with cloud sync.',
-  // },
   {
     icon: Eye,
     title: 'Quick Preview',
@@ -78,6 +64,9 @@ const itemVariants = {
 };
 
 export default function Landing() {
+  // Get authentication state
+  const { isAuthenticated } = useAuth(); // Adjust based on your auth implementation
+  
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -106,23 +95,36 @@ export default function Landing() {
               Securely store and manage your most important documents. Passports, licenses, insurance cards, and more — all encrypted and always accessible.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/signup">
-                <Button size="lg" className="gap-2 px-8">
-                  Create your account
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="outline" size="lg">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-            
-            {/* <p className="mt-4 text-xs text-muted-foreground">
-              Demo credentials: demo@vault.app / demo123
-            </p> */}
+            {/* Conditionally render auth buttons */}
+            {!isAuthenticated ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link to="/signup">
+                  <Button size="lg" className="gap-2 px-8">
+                    Create your account
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button variant="outline" size="lg">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link to="/dashboard">
+                  <Button size="lg" className="gap-2 px-8">
+                    Go to Dashboard
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link to="/documents">
+                  <Button variant="outline" size="lg">
+                    View Documents
+                  </Button>
+                </Link>
+              </div>
+            )}
           </motion.div>
           
           {/* Hero Visual */}
@@ -272,23 +274,39 @@ export default function Landing() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl font-bold mb-4">
-              Start protecting your documents today
+              {isAuthenticated ? 'Continue managing your documents' : 'Start protecting your documents today'}
             </h2>
             <p className="opacity-80 mb-8 max-w-xl mx-auto">
-              Join thousands of users who trust Vault to keep their personal data safe. Get started in seconds.
+              {isAuthenticated 
+                ? 'Your documents are safely encrypted and ready for you.'
+                : 'Join thousands of users who trust Vault to keep their personal data safe. Get started in seconds.'
+              }
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/signup">
-                <Button size="lg" variant="secondary" className="gap-2 px-8">
-                  Create  Account
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link to="/login">
-                {/* <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
-                  Try Demo
-                </Button> */}
-              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/signup">
+                    <Button size="lg" variant="secondary" className="gap-2 px-8">
+                      Create Account
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/dashboard">
+                    <Button size="lg" variant="secondary" className="gap-2 px-8">
+                      Go to Dashboard
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/documents">
+                    <Button size="lg" variant="outline" className="border-primary-foreground/20 text-black hover:bg-white"> 
+                      View Documents
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         </div>
