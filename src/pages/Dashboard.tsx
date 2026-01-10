@@ -47,7 +47,7 @@ export function VerifyBadge({ verified }: { verified?: boolean }) {
       variant="link"
       className="gap-1 text-xs text-green-600 border-none bg-green-500 text-white"
     >
-      Verified
+      Encrypted
       <CircleCheck className="w-4 h-4" />
     </Badge>
   );
@@ -189,7 +189,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link to="/documents?filter=archived" className="vault-card-hover p-4 flex items-center gap-3">
+          {/* <Link to="/documents?filter=archived" className="vault-card-hover p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
               <Archive className="w-5 h-5 text-secondary-foreground" />
             </div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
               <p className="font-medium">Archived</p>
               <p className="text-xs text-muted-foreground">{archivedDocuments.length} document{archivedDocuments.length !== 1 ? 's' : ''}</p>
             </div>
-          </Link>
+          </Link> */}
         </motion.div>
 
         {/* Storage Info Card - Moved to separate row for better layout */}

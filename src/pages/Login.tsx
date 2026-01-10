@@ -133,7 +133,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-3">
+            {/* <div className="mt-6 space-y-3">
               <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
                 Use Demo Credentials
               </Button>
@@ -141,7 +141,7 @@ export default function Login() {
                 <User className="w-4 h-4" />
                 Continue as Guest
               </Button>
-            </div>
+            </div> */}
           </div>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
