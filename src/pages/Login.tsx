@@ -134,13 +134,13 @@ export default function Login() {
             </div>
 
             <div className="mt-6 space-y-3">
-              {/* <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
+              <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
                 Use Demo Credentials
-              </Button> */}
-              {/* <Button variant="ghost" className="w-full gap-2" onClick={handleGuestAccess}>
+              </Button>
+              <Button variant="ghost" className="w-full gap-2" onClick={handleGuestAccess}>
                 <User className="w-4 h-4" />
                 Continue as Guest
-              </Button> */}
+              </Button>
             </div>
           </div>
 
