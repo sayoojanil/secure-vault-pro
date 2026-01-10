@@ -1,8 +1,8 @@
 
 import path from 'path';
 
-const url = 'http://localhost:5000/uploads/user123/file.pdf';
-// const url = 'https://backend-digilocker-3.onrender.com/uploads/user123/file.pdf';
+// const url = 'http://localhost:5000/uploads/user123/file.pdf';
+const url = 'https://backend-digilocker-3.onrender.com/uploads/user123/file.pdf';
 console.log('URL:', url);
 console.log('path.basename:', path.basename(url));
 console.log('path.win32.basename:', path.win32.basename(url));

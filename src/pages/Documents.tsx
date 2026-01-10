@@ -329,7 +329,7 @@ export default function Documents() {
       return;
     }
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const apiUrl = import.meta.env.VITE_API_URL ;
     const viewUrl = `${apiUrl}/api/documents/${documentId}/view?token=${token}`;
     
     // Open in new tab with proper dimensions
@@ -557,7 +557,7 @@ export default function Documents() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 const token = localStorage.getItem('vault_token');
-                                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                                const apiUrl = import.meta.env.VITE_API_URL;
                                 window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
                               }}>
                                 <Download className="w-4 h-4 mr-2" />
@@ -680,7 +680,7 @@ export default function Documents() {
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
                   const token = localStorage.getItem('vault_token');
-                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                  const apiUrl = import.meta.env.VITE_API_URL;
                   window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
                 }}>
                   <Download className="w-4 h-4 mr-2" />
@@ -764,7 +764,7 @@ export default function Documents() {
               <div className="aspect-[4/3] bg-vault-surface rounded-none flex items-center justify-center overflow-hidden">
                 {selectedDocument.fileType === 'pdf' ? (
                   <iframe
-                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/documents/${selectedDocument.id}/view?token=${localStorage.getItem('vault_token')}`}
+                    src={`${import.meta.env.VITE_API_URL }/api/documents/${selectedDocument.id}/view?token=${localStorage.getItem('vault_token')}`}
                     className="w-1/4 h-1/4 border-0"
                     title={selectedDocument.name}
                   />
