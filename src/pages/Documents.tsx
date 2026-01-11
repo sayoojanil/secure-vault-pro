@@ -953,178 +953,241 @@ export default function Documents() {
       </Dialog>
 
       {/* Zoom Modal for Images */}
-      <Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-0 border-0 bg-black/95">
-          <div className="relative w-full h-full">
-            {/* Image Container */}
-            <div className="flex items-center justify-center w-full h-full p-4">
-              <div className="relative overflow-auto max-w-full max-h-full">
-                <motion.img
-                  src={zoomImageSrc}
-                  alt={zoomImageName}
-                  className="origin-center select-none"
-                  style={{
-                    scale: zoomLevel / 100,
-                    rotate: `${rotation}deg`,
-                    maxWidth: isFullscreen ? '100vw' : 'none',
-                    maxHeight: isFullscreen ? '100vh' : 'none',
-                    cursor: zoomLevel > 100 ? 'grab' : 'default',
-                  }}
-                  drag={zoomLevel > 100}
-                  dragConstraints={{
-                    left: -100,
-                    right: 100,
-                    top: -100,
-                    bottom: 100,
-                  }}
-                  dragElastic={0.2}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: zoomLevel / 100 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </div>
+     {/* Zoom Modal for Images - Mobile Optimized */}
+<Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
+  <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full p-0 border-0 bg-black">
+    <div className="relative w-full h-full flex flex-col">
+      {/* Image Container */}
+      <div className="flex-1 overflow-hidden flex items-center justify-center p-2 touch-none">
+        <motion.img
+          src={zoomImageSrc}
+          alt={zoomImageName}
+          className="origin-center select-none max-w-full max-h-full object-contain"
+          style={{
+            scale: zoomLevel / 100,
+            rotate: `${rotation}deg`,
+          }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: zoomLevel / 100 }}
+          transition={{ duration: 0.2 }}
+          // Pinch to zoom gesture support
+          onTouchStart={(e) => {
+            if (e.touches.length === 2) {
+              e.preventDefault();
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.touches.length === 2) {
+              e.preventDefault();
+              const touch1 = e.touches[0];
+              const touch2 = e.touches[1];
+              const distance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+              );
+              
+              // Calculate zoom level based on pinch distance
+              const baseDistance = 100; // arbitrary base distance
+              const newZoom = Math.min(300, Math.max(50, (distance / baseDistance) * 100));
+              setZoomLevel(Math.round(newZoom / 5) * 5); // Round to nearest 5%
+            }
+          }}
+          // Double tap to zoom
+          onTouchEnd={(e) => {
+            if (e.touches.length === 0 && e.changedTouches.length === 1) {
+              const touch = e.changedTouches[0];
+              const now = Date.now();
+              if (now - lastTapTime < 300) {
+                // Double tap detected
+                if (zoomLevel === 100) {
+                  setZoomLevel(200);
+                } else {
+                  setZoomLevel(100);
+                  setRotation(0);
+                }
+              }
+              lastTapTime = now;
+            }
+          }}
+        />
+      </div>
+
+      {/* Compact Mobile Controls */}
+      <div className="flex flex-col gap-2 p-3 bg-black/90 backdrop-blur-sm">
+        {/* File Name - Compact */}
+        <div className="flex items-center justify-center mb-1">
+          <p className="text-white text-sm font-medium truncate max-w-[80vw] text-center">
+            {zoomImageName}
+          </p>
+        </div>
+
+        {/* Zoom Controls Row */}
+        <div className="flex items-center justify-between">
+          {/* Left Controls */}
+          <div className="flex items-center gap-2">
+            {/* Reset Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white hover:bg-white/20"
+                    onClick={() => {
+                      setZoomLevel(100);
+                      setRotation(0);
+                    }}
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Reset</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Rotation */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white hover:bg-white/20"
+                    onClick={() => setRotation(prev => (prev + 90) % 360)}
+                  >
+                    <span className="text-xs font-medium">↻</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Rotate 90°</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {/* Zoom Percentage Display */}
+          <div className="flex items-center gap-2">
+            {/* Zoom Out */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white hover:bg-white/20"
+                    onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
+                    disabled={zoomLevel <= 50}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Zoom Out</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Zoom Level */}
+            <div className="min-w-[60px] text-center">
+              <span className="text-white text-sm font-medium">{zoomLevel}%</span>
             </div>
 
-            {/* Top Controls */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm rounded-full px-4 py-2">
-              <p className="text-white text-sm font-medium truncate max-w-xs">
-                {zoomImageName}
-              </p>
-            </div>
+            {/* Zoom In */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white hover:bg-white/20"
+                    onClick={() => setZoomLevel(prev => Math.min(300, prev + 25))}
+                    disabled={zoomLevel >= 300}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Zoom In</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
 
-            {/* Bottom Controls */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/70 backdrop-blur-sm rounded-full px-6 py-3">
-              {/* Zoom Out */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-white hover:bg-white/20"
-                      onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
-                      disabled={zoomLevel <= 50}
-                    >
-                      <ZoomOut className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Zoom Out</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Zoom Slider */}
-              <div className="flex items-center gap-3 w-48">
-                <span className="text-white text-sm w-12">{zoomLevel}%</span>
-                <Slider
-                  value={[zoomLevel]}
-                  onValueChange={([value]) => setZoomLevel(value)}
-                  min={50}
-                  max={300}
-                  step={10}
-                  className="flex-1"
-                />
-              </div>
-
-              {/* Zoom In */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-white hover:bg-white/20"
-                      onClick={() => setZoomLevel(prev => Math.min(300, prev + 25))}
-                      disabled={zoomLevel >= 300}
-                    >
-                      <ZoomIn className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Zoom In</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Rotation */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-white hover:bg-white/20"
-                      onClick={() => setRotation(prev => (prev + 90) % 360)}
-                    >
-                      <RotateCw className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Rotate 90°</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Fullscreen Toggle */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-white hover:bg-white/20"
-                      onClick={() => setIsFullscreen(!isFullscreen)}
-                    >
-                      {isFullscreen ? (
-                        <Minimize2 className="h-5 w-5" />
-                      ) : (
-                        <Maximize2 className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Reset */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-white hover:bg-white/20"
-                      onClick={() => {
-                        setZoomLevel(100);
-                        setRotation(0);
-                      }}
-                    >
-                      <span className="text-sm font-medium">100%</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Reset to default</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+          {/* Right Controls */}
+          <div className="flex items-center gap-2">
+            {/* Fullscreen */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white hover:bg-white/20"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Close Button */}
             <DialogClose asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4 h-10 w-10 text-white hover:bg-white/20"
+                className="h-9 w-9 text-white hover:bg-white/20"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </DialogClose>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+
+        {/* Zoom Slider - Mobile Friendly */}
+        <div className="px-1 mt-1">
+          <Slider
+            value={[zoomLevel]}
+            onValueChange={([value]) => setZoomLevel(value)}
+            min={50}
+            max={300}
+            step={10}
+            className="w-full"
+          />
+          <div className="flex justify-between mt-1 px-1">
+            <span className="text-xs text-white/70">50%</span>
+            <span className="text-xs text-white/70">Zoom</span>
+            <span className="text-xs text-white/70">300%</span>
+          </div>
+        </div>
+
+        {/* Quick Zoom Presets */}
+        <div className="flex justify-center gap-2 mt-2">
+          {[100, 150, 200].map((preset) => (
+            <Button
+              key={preset}
+              variant="outline"
+              size="sm"
+              className={`h-7 text-xs ${zoomLevel === preset ? 'bg-white text-black' : 'text-white border-white/30'}`}
+              onClick={() => setZoomLevel(preset)}
+            >
+              {preset}%
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }
