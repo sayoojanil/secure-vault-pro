@@ -377,7 +377,7 @@ export default function Documents() {
             Upload
           </Button>
         </div>
-
+    
         {/* Filters & Search */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
@@ -386,7 +386,7 @@ export default function Documents() {
               placeholder="Search documents..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 rounded-none"
             />
           </div>
 

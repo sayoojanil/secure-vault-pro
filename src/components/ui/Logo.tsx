@@ -1,4 +1,4 @@
-import { Shield, LockKeyhole, Cloudy, CloudUpload } from 'lucide-react';
+import { Shield, LockKeyhole, Cloudy, CloudUpload, UserPlusIcon, FileLock, FileLock2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LogoProps {
@@ -17,7 +17,7 @@ export function Logo({ className, size = 'md', showText = true }: LogoProps) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <div className="relative">
-        <CloudUpload className={cn(sizes[size].icon, 'text-foreground')} strokeWidth={2} />
+        <ShieldCheck className={cn(sizes[size].icon, 'text-foreground')} strokeWidth={2} />
         {/* <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-1.5 h-1.5 bg-foreground rounded-full" />
         </div> */}

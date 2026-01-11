@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -19,9 +20,17 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const confirmed = window.confirm("Are you sure you want to logout?");
+  if (!confirmed) return;
+
+  toast.error("You have been logged out", {
+    description: "Login again for viewing your personal documents."
+  });  
+  navigate('/');
+
+  logout(); // your existing logout logic
+};
+
 
   return (
     <motion.header
@@ -59,6 +68,9 @@ export function Header() {
                 <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Dashboard
                 </Link>
+                 {/* <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Home
+                </Link> */}
                 <Link to="/documents" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Documents
                 </Link>
@@ -84,7 +96,7 @@ export function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
+                      Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -114,7 +114,7 @@ export default function Signup() {
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Full Name"
                 className="mt-1.5"
                 {...register('name')}
               />
@@ -128,7 +128,7 @@ export default function Signup() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="email@example.com"
                 className="mt-1.5"
                 {...register('email')}
               />
