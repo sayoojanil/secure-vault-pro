@@ -197,7 +197,7 @@ export default function Landing() {
                 variants={itemVariants}
                 className="vault-card-hover p-4 md:p-6"
               >
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-primary flex items-center justify-center mb-3 md:mb-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary flex items-center justify-center mb-3 md:mb-4">
                   <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
                 </div>
                 <h3 className="font-semibold text-base md:text-lg mb-1 md:mb-2">{feature.title}</h3>
@@ -251,15 +251,15 @@ export default function Landing() {
               className="relative order-1 lg:order-2 mb-8 lg:mb-0"
             >
               <div className="vault-card p-6 md:p-8 bg-primary text-primary-foreground">
-                <Lock className="w-12 h-12 md:w-16 md:h-16 mb-4 md:mb-6 opacity-80" />
+                <Lock className="w-12 h-12 md:w-16 md:h-16 mb-4 md:mb-6 opacity-80 " />
                 <h3 className="text-xl md:text-2xl font-bold mb-2">Zero-Knowledge</h3>
                 <p className="opacity-80 text-sm md:text-base">
                   Only you can access your encrypted documents. Not even our team can view your files — that's how secure we are.
                 </p>
               </div>
-              <div className="absolute -bottom-3 -right-3 md:-bottom-4 md:-right-4 w-16 h-16 md:w-24 md:h-24 bg-vault-surface border border-border rounded-lg flex items-center justify-center">
+              {/* <div className="absolute -bottom-3 -right-3 md:-bottom-4 md:-right-4 w-16 h-16 md:w-24 md:h-24 bg-vault-surface border border-border rounded-lg flex items-center justify-center">
                 <Shield className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground" />
-              </div>
+              </div> */}
             </motion.div>
           </div>
         </div>

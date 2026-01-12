@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheck, CircleCheck, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Lock, ShieldCheck } from "lucide-react";
 
 export function VerifyBadge({ verified }: { verified?: boolean }) {
   if (!verified) return null;
@@ -11,7 +11,7 @@ export function VerifyBadge({ verified }: { verified?: boolean }) {
       
     >
         Verified
-      <CircleCheck  className="w-4 h-4" />
+      <Lock  className="w-4 h-4" />
       
     </Badge>
   );

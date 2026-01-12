@@ -249,7 +249,7 @@ export default function Dashboard() {
                     <div className="relative mx-auto mb-2 w-fit">
                       <Icon className="w-6 h-6 text-muted-foreground" />
                       {count > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 bg-green-500 text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
                           {count}
                         </span>
                       )}

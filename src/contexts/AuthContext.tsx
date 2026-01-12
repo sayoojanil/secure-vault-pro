@@ -12,6 +12,7 @@ import React, {
 export interface User {
   id: string;
   name: string;
+  phone: string;
   email: string;
   storageUsed: number;
   storageLimit: number;
