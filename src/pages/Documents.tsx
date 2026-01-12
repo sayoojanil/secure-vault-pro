@@ -374,7 +374,7 @@ export default function Documents() {
           </div>
           <Button className="gap-2 rounded-full" onClick={() => setShowUploadDialog(true)}>
             <Upload className="w-4 h-4" />
-            Upload
+            Upload Documents
           </Button>
         </div>
     

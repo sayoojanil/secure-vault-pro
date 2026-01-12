@@ -74,10 +74,10 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link to="/dashboard" className="text-sm  font-semibold  text-muted-foreground hover:text-foreground transition-colors">
                     Dashboard
                   </Link>
-                  <Link to="/documents" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link to="/documents" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
                     Documents
                   </Link>
                   <DropdownMenu>

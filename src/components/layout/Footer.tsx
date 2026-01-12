@@ -22,7 +22,7 @@ export function Footer() {
               </div>
             </div>
           </div>
-          
+{/*           
           <div>
             <h4 className="font-medium text-sm mb-4">Product</h4>
             <ul className="space-y-2">
@@ -31,7 +31,7 @@ export function Footer() {
               <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a></li>
               <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Enterprise</a></li>
             </ul>
-          </div>
+          </div> */}
           
           <div>
             <h4 className="font-medium text-sm mb-4">Company</h4>
