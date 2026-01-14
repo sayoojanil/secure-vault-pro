@@ -11,7 +11,7 @@ export function VerifyBadge({ verified }: { verified?: boolean }) {
       
     >
         Verified
-      <Lock  className="w-4 h-4" />
+      <BadgeCheck  className="w-4 h-4" />
       
     </Badge>
   );

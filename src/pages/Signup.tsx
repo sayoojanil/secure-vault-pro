@@ -173,17 +173,17 @@ export default function Signup() {
               )}
             </div>
 
-            <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+            <Button type="submit" className="w-full gap-2 rounded-full" disabled={isLoading}>
               {isLoading ? 'Creating account...' : 'Create Account'}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
 
-          <p className="mt-6 text-xs text-center text-muted-foreground">
+          {/* <p className="mt-6 text-xs text-center text-muted-foreground">
             By signing up, you agree to our{' '}
             <a href="#" className="underline">Terms of Service</a> and{' '}
             <a href="#" className="underline">Privacy Policy</a>.
-          </p>
+          </p> */}
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Already have an account?{' '}

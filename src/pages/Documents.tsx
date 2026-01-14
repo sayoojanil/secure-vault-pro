@@ -640,7 +640,7 @@ export default function Documents() {
           </div>
           <div className="flex items-center gap-2">
             {doc.tags.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="ghost" className="text-xs hidden sm:inline-flex">
+              <Badge key={tag} variant="ghost" className="text-xs hidden sm:inline-flex bg-green-100 text-green-600 border-green-100">
                 {tag}
               </Badge>
             ))}

@@ -226,11 +226,11 @@ export function Header() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-2 group hover:scale-105 active:scale-95 transition-transform">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                          {/* <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
                             {user.name.charAt(0).toUpperCase()}
-                          </div>
+                          </div> */}
                           <span className="hidden sm:inline">{user.name}</span>
-                          <ChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                          <ChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-50 transition-opacity" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
@@ -313,7 +313,7 @@ export function Header() {
                       animate={{ x: 0, opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Link 
+                      {/* <Link 
                         to="/#features" 
                         className="py-2 text-muted-foreground hover:text-foreground transition-colors block"
                         onClick={() => setMobileMenuOpen(false)}
@@ -338,7 +338,7 @@ export function Header() {
                       initial={{ x: -20, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
                       transition={{ duration: 0.2, delay: 0.2 }}
-                    >
+                    > */}
                       <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           Sign In

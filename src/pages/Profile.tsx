@@ -361,8 +361,8 @@ export default function Profile() {
                   <div>
                     <Label className="text-sm">Current Status</Label>
                     <div className="mt-1">
-                      <Badge variant="outline" className="bg-green-500 text-white border-green-500/20">
-                        Online
+                      <Badge variant="outline" className="bg-green-400  text-white border-green-400">
+                        Active
                       </Badge>
                     </div>
                   </div>
