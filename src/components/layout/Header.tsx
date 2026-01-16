@@ -99,31 +99,14 @@ export function Header() {
             <nav className="hidden md:flex items-center gap-6">
               {!user ? (
                 <>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                  >
-                    <Link to="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors hover:scale-105 active:scale-95">
-                      Features
-                    </Link>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                  >
-                    <Link to="/#security" className="text-sm text-muted-foreground hover:text-foreground transition-colors hover:scale-105 active:scale-95">
-                      Security
-                    </Link>
-                  </motion.div>
+                  
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 }}
                   >
                     <Link to="/login">
-                      <Button variant="ghost" size="sm" className="hover:scale-105 active:scale-95 transition-transform">
+                      <Button variant="ghost" size="sm" className="hover:scale-105 rounded-full active:scale-95 transition-transform">
                         Sign In
                       </Button>
                     </Link>
@@ -134,7 +117,7 @@ export function Header() {
                     transition={{ duration: 0.3, delay: 0.4 }}
                   >
                     <Link to="/signup">
-                      <Button size="sm" className="hover:scale-105 active:scale-95 transition-transform">
+                      <Button size="sm" className="hover:scale-105 rounded-full active:scale-95 transition-transform">
                         Get Started
                       </Button>
                     </Link>

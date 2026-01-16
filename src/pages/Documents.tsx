@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -101,6 +101,9 @@ const fileTypeIcons = {
   gif: ImageIcon,
 };
 
+// Track last tap time for double tap detection
+let lastTapTime = 0;
+
 export default function Documents() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { documents, isLoading, deleteDocument, archiveDocument, toggleFavorite, updateDocument, addDocument } = useVault();
@@ -142,6 +145,31 @@ export default function Documents() {
     setZoomLevel(100);
     setRotation(0);
     setShowZoomModal(true);
+  };
+
+  // Open PDF in same tab
+  const openPdfInSameTab = (documentId: string) => {
+    try {
+      const token = localStorage.getItem('vault_token');
+      if (!token) {
+        toast.error('Authentication required. Please log in again.');
+        return;
+      }
+      
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        toast.error('Configuration error. Please try again.');
+        return;
+      }
+      
+      const viewUrl = `${apiUrl}/api/documents/${documentId}/view?token=${token}`;
+      
+      // Navigate in the same tab
+      window.location.href = viewUrl;
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      toast.error('Failed to open document. Please try again.');
+    }
   };
 
   // Filter documents
@@ -284,32 +312,29 @@ export default function Documents() {
   };
 
   const handleDelete = async () => {
-  if (!selectedDocument) return;
+    if (!selectedDocument) return;
 
-  try {
-    const toastId = toast.loading('Deleting document...', {
-      description: selectedDocument.name,
-    });
+    try {
+      const toastId = toast.loading('Deleting document...', {
+        description: selectedDocument.name,
+      });
 
-    await deleteDocument(selectedDocument.id);
+      await deleteDocument(selectedDocument.id);
 
-    toast.success('Document deleted successfully', {
-      id: toastId,
-      // description: selectedDocument.name,
-            description: `${selectedDocument.name} has been permanently deleted.`,
+      toast.success('Document deleted successfully', {
+        id: toastId,
+        description: `${selectedDocument.name} has been permanently deleted.`,
+      });
 
-    });
-
-    setShowDeleteDialog(false);
-    setSelectedDocument(null);
-  } catch (error) {
-    toast.error('Failed to delete document', {
-      description: selectedDocument?.name,
-    });
-    console.error('Delete error:', error);
-  }
-};
-
+      setShowDeleteDialog(false);
+      setSelectedDocument(null);
+    } catch (error) {
+      toast.error('Failed to delete document', {
+        description: selectedDocument?.name,
+      });
+      console.error('Delete error:', error);
+    }
+  };
 
   const handleArchive = async (doc: Document) => {
     try {
@@ -319,28 +344,6 @@ export default function Documents() {
     } catch (error) {
       toast.error('Failed to archive document');
       console.error('Archive error:', error);
-    }
-  };
-
-  const openPdfInNewTab = (documentId: string) => {
-    const token = localStorage.getItem('vault_token');
-    if (!token) {
-      toast.error('Authentication required. Please log in again.');
-      return;
-    }
-    
-    const apiUrl = import.meta.env.VITE_API_URL ;
-    const viewUrl = `${apiUrl}/api/documents/${documentId}/view?token=${token}`;
-    
-    // Open in new tab with proper dimensions
-    const newWindow = window.open(
-      viewUrl,
-      '_blank',
-      'noopener,noreferrer,width=1200,height=800'
-    );
-    
-    if (!newWindow) {
-      toast.error('Please allow popups to view PDFs in new tab');
     }
   };
 
@@ -471,8 +474,8 @@ export default function Documents() {
             <p className="text-muted-foreground text-sm mb-4">
               {searchQuery ? 'Try adjusting your search or filters' : 'Upload your first document to get started'}
             </p>
-            <Button onClick={() => setShowUploadDialog(true)}>
-              <Upload className="w-4 h-4 mr-2" />
+            <Button className='rounded-full' onClick={() => setShowUploadDialog(true)}>
+              <Upload className="w-4 h-4 mr-2 " />
               Upload Document
             </Button>
           </motion.div>
@@ -520,25 +523,23 @@ export default function Documents() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-  <p className="font-medium text-sm truncate">{doc.name}</p>
-  <VerifyBadge verified={doc.isVerified ?? true} />
-</div>
-
+                            <p className="font-medium text-sm truncate">{doc.name}</p>
+                            <VerifyBadge verified={doc.isVerified ?? true} />
+                          </div>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             <CategoryIcon className="w-3 h-3" />
                             <span>{CATEGORY_LABELS[doc.category]}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                         <button
-  onClick={() => handleToggleFavorite(doc.id, doc.isFavorite)}
-  className={`p-1 rounded hover:bg-secondary ${
-    doc.isFavorite ? "text-foreground" : "text-muted-foreground"
-  }`}
->
-  <Heart className={`w-4 h-4 ${doc.isFavorite ? "fill-current" : ""}`} />
-</button>
-
+                          <button
+                            onClick={() => handleToggleFavorite(doc.id, doc.isFavorite)}
+                            className={`p-1 rounded hover:bg-secondary ${
+                              doc.isFavorite ? "text-foreground" : "text-muted-foreground"
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${doc.isFavorite ? "fill-current" : ""}`} />
+                          </button>
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -547,7 +548,7 @@ export default function Documents() {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
+                              <DropdownMenuItem onClick={() => openPdfInSameTab(doc.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Document
                               </DropdownMenuItem>
@@ -582,9 +583,7 @@ export default function Documents() {
                       <div className="flex items-center gap-2 mt-3">
                         <span className="text-xs text-muted-foreground">{formatBytes(doc.size)}</span>
                         <span className="text-xs text-muted-foreground">•</span>
-                        
                         <span className="text-xs text-muted-foreground">{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
-            
                       </div>
                       {doc.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-3">
@@ -601,118 +600,113 @@ export default function Documents() {
               })}
             </AnimatePresence>
           </motion.div>
-      ) : (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="vault-card divide-y divide-border"
-  >
-    {filteredDocuments.map((doc) => {
-      const CategoryIcon = categoryIcons[doc.category];
-      const FileIcon = fileTypeIcons[doc.fileType];
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="vault-card divide-y divide-border"
+          >
+            {filteredDocuments.map((doc) => {
+              const CategoryIcon = categoryIcons[doc.category];
+              const FileIcon = fileTypeIcons[doc.fileType];
 
-      return (
-        <div 
-          key={doc.id} 
-          className="flex items-center gap-4 p-4 hover:bg-vault-surface-hover transition-colors cursor-pointer"
-          onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
-        >
-          <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center flex-shrink-0">
-            <FileIcon className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            {/* <p className="font-medium text-sm truncate">{doc.name}</p> */}
-            <div className="flex items-center gap-2">
-  <p className="font-medium text-sm truncate">{doc.name}</p>
-  <VerifyBadge verified={doc.isVerified ?? true} />
-</div>
-
-            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            {/* <p className="font-medium text-sm truncate">{doc.fileType}</p> */}
-
-              <span className="flex items-center gap-1">
-                <CategoryIcon className="w-3 h-3" />
-                {CATEGORY_LABELS[doc.category]}
-              </span>
-              <span>{formatBytes(doc.size)}</span>
-              <span>{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {doc.tags.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="ghost" className="text-xs hidden sm:inline-flex bg-green-100 text-green-600 border-green-100">
-                {tag}
-              </Badge>
-            ))}
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering the row click
-                toggleFavorite(doc.id);
-                handleToggleFavorite(doc.id, doc.isFavorite);
-
-              }}
-              className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
-              <Heart className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button 
-                  className="p-2 rounded hover:bg-secondary text-muted-foreground"
-                  onClick={(e) => e.stopPropagation()} // Prevent triggering the row click
+              return (
+                <div 
+                  key={doc.id} 
+                  className="flex items-center gap-4 p-4 hover:bg-vault-surface-hover transition-colors cursor-pointer"
+                  onClick={() => { setSelectedDocument(doc); setShowPreviewDialog(true); }}
                 >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openPdfInNewTab(doc.id)}>
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Document
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedDocument(doc);
-                  setShowEditDialog(true);
-                }}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  const token = localStorage.getItem('vault_token');
-                  const apiUrl = import.meta.env.VITE_API_URL;
-                  window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
-                }}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  handleArchive(doc);
-                }}>
-                  <Archive className="w-4 h-4 mr-2" />
-                  Archive
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedDocument(doc);
-                    setShowDeleteDialog(true);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      );
-    })}
-  </motion.div>
-)}
+                  <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center flex-shrink-0">
+                    <FileIcon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{doc.name}</p>
+                      <VerifyBadge verified={doc.isVerified ?? true} />
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CategoryIcon className="w-3 h-3" />
+                        {CATEGORY_LABELS[doc.category]}
+                      </span>
+                      <span>{formatBytes(doc.size)}</span>
+                      <span>{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {doc.tags.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="ghost" className="text-xs hidden sm:inline-flex bg-green-100 text-green-600 border-green-100">
+                        {tag}
+                      </Badge>
+                    ))}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the row click
+                        toggleFavorite(doc.id);
+                        handleToggleFavorite(doc.id, doc.isFavorite);
+                      }}
+                      className={`p-2 rounded hover:bg-secondary ${doc.isFavorite ? 'text-foreground' : 'text-muted-foreground'}`}
+                    >
+                      <Heart className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="p-2 rounded hover:bg-secondary text-muted-foreground"
+                          onClick={(e) => e.stopPropagation()} // Prevent triggering the row click
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openPdfInSameTab(doc.id)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Document
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDocument(doc);
+                          setShowEditDialog(true);
+                        }}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          const token = localStorage.getItem('vault_token');
+                          const apiUrl = import.meta.env.VITE_API_URL;
+                          window.open(`${apiUrl}/api/documents/${doc.id}/download?token=${token}`, '_blank');
+                        }}>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleArchive(doc);
+                        }}>
+                          <Archive className="w-4 h-4 mr-2" />
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDocument(doc);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
       </main>
 
       {/* Upload Dialog */}
@@ -837,11 +831,11 @@ export default function Documents() {
           )}
           <DialogFooter className="flex justify-between">
             <Button 
-            className='bg-black text-white'
+              className='bg-black text-white'
               variant="outline" 
               onClick={() => {
                 if (selectedDocument) {
-                  openPdfInNewTab(selectedDocument.id);
+                  openPdfInSameTab(selectedDocument.id);
                 }
               }}
               disabled={selectedDocument?.fileType !== 'pdf'}
@@ -919,12 +913,10 @@ export default function Documents() {
                 <Textarea id="notes" name="notes" defaultValue={selectedDocument.metadata.notes || ''} className="mt-1.5" rows={3} />
               </div>
               <DialogFooter>
-                
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-              <br/>
-
+                <br/>
                 <Button type="submit">Update document</Button>
               </DialogFooter>
             </form>
@@ -952,242 +944,241 @@ export default function Documents() {
         </DialogContent>
       </Dialog>
 
-      {/* Zoom Modal for Images */}
-     {/* Zoom Modal for Images - Mobile Optimized */}
-<Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
-  <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full p-0 border-0 bg-black">
-    <div className="relative w-full h-full flex flex-col">
-      {/* Image Container */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center p-2 touch-none">
-        <motion.img
-          src={zoomImageSrc}
-          alt={zoomImageName}
-          className="origin-center select-none max-w-full max-h-full object-contain"
-          style={{
-            scale: zoomLevel / 100,
-            rotate: `${rotation}deg`,
-          }}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: zoomLevel / 100 }}
-          transition={{ duration: 0.2 }}
-          // Pinch to zoom gesture support
-          onTouchStart={(e) => {
-            if (e.touches.length === 2) {
-              e.preventDefault();
-            }
-          }}
-          onTouchMove={(e) => {
-            if (e.touches.length === 2) {
-              e.preventDefault();
-              const touch1 = e.touches[0];
-              const touch2 = e.touches[1];
-              const distance = Math.hypot(
-                touch2.clientX - touch1.clientX,
-                touch2.clientY - touch1.clientY
-              );
-              
-              // Calculate zoom level based on pinch distance
-              const baseDistance = 100; // arbitrary base distance
-              const newZoom = Math.min(300, Math.max(50, (distance / baseDistance) * 100));
-              setZoomLevel(Math.round(newZoom / 5) * 5); // Round to nearest 5%
-            }
-          }}
-          // Double tap to zoom
-          onTouchEnd={(e) => {
-            if (e.touches.length === 0 && e.changedTouches.length === 1) {
-              const touch = e.changedTouches[0];
-              const now = Date.now();
-              if (now - lastTapTime < 300) {
-                // Double tap detected
-                if (zoomLevel === 100) {
-                  setZoomLevel(200);
-                } else {
-                  setZoomLevel(100);
-                  setRotation(0);
-                }
-              }
-              lastTapTime = now;
-            }
-          }}
-        />
-      </div>
-
-      {/* Compact Mobile Controls */}
-      <div className="flex flex-col gap-2 p-3 bg-black/90 backdrop-blur-sm">
-        {/* File Name - Compact */}
-        <div className="flex items-center justify-center mb-1">
-          <p className="text-white text-sm font-medium truncate max-w-[80vw] text-center">
-            {zoomImageName}
-          </p>
-        </div>
-
-        {/* Zoom Controls Row */}
-        <div className="flex items-center justify-between">
-          {/* Left Controls */}
-          <div className="flex items-center gap-2">
-            {/* Reset Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white hover:bg-white/20"
-                    onClick={() => {
-                      setZoomLevel(100);
-                      setRotation(0);
-                    }}
-                  >
-                    <RotateCw className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Reset</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Rotation */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white hover:bg-white/20"
-                    onClick={() => setRotation(prev => (prev + 90) % 360)}
-                  >
-                    <span className="text-xs font-medium">↻</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Rotate 90°</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {/* Zoom Percentage Display */}
-          <div className="flex items-center gap-2">
-            {/* Zoom Out */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white hover:bg-white/20"
-                    onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
-                    disabled={zoomLevel <= 50}
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Zoom Out</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Zoom Level */}
-            <div className="min-w-[60px] text-center">
-              <span className="text-white text-sm font-medium">{zoomLevel}%</span>
+      {/* Zoom Modal for Images - Mobile Optimized */}
+      <Dialog open={showZoomModal} onOpenChange={setShowZoomModal}>
+        <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full p-0 border-0 bg-black">
+          <div className="relative w-full h-full flex flex-col">
+            {/* Image Container */}
+            <div className="flex-1 overflow-hidden flex items-center justify-center p-2 touch-none">
+              <motion.img
+                src={zoomImageSrc}
+                alt={zoomImageName}
+                className="origin-center select-none max-w-full max-h-full object-contain"
+                style={{
+                  scale: zoomLevel / 100,
+                  rotate: `${rotation}deg`,
+                }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: zoomLevel / 100 }}
+                transition={{ duration: 0.2 }}
+                // Pinch to zoom gesture support
+                onTouchStart={(e) => {
+                  if (e.touches.length === 2) {
+                    e.preventDefault();
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const distance = Math.hypot(
+                      touch2.clientX - touch1.clientX,
+                      touch2.clientY - touch1.clientY
+                    );
+                    
+                    // Calculate zoom level based on pinch distance
+                    const baseDistance = 100; // arbitrary base distance
+                    const newZoom = Math.min(300, Math.max(50, (distance / baseDistance) * 100));
+                    setZoomLevel(Math.round(newZoom / 5) * 5); // Round to nearest 5%
+                  }
+                }}
+                // Double tap to zoom
+                onTouchEnd={(e) => {
+                  if (e.touches.length === 0 && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const now = Date.now();
+                    if (now - lastTapTime < 300) {
+                      // Double tap detected
+                      if (zoomLevel === 100) {
+                        setZoomLevel(200);
+                      } else {
+                        setZoomLevel(100);
+                        setRotation(0);
+                      }
+                    }
+                    lastTapTime = now;
+                  }
+                }}
+              />
             </div>
 
-            {/* Zoom In */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
+            {/* Compact Mobile Controls */}
+            <div className="flex flex-col gap-2 p-3 bg-black/90 backdrop-blur-sm">
+              {/* File Name - Compact */}
+              <div className="flex items-center justify-center mb-1">
+                <p className="text-white text-sm font-medium truncate max-w-[80vw] text-center">
+                  {zoomImageName}
+                </p>
+              </div>
+
+              {/* Zoom Controls Row */}
+              <div className="flex items-center justify-between">
+                {/* Left Controls */}
+                <div className="flex items-center gap-2">
+                  {/* Reset Button */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white hover:bg-white/20"
+                          onClick={() => {
+                            setZoomLevel(100);
+                            setRotation(0);
+                          }}
+                        >
+                          <RotateCw className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Reset</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Rotation */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white hover:bg-white/20"
+                          onClick={() => setRotation(prev => (prev + 90) % 360)}
+                        >
+                          <span className="text-xs font-medium">↻</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Rotate 90°</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Zoom Percentage Display */}
+                <div className="flex items-center gap-2">
+                  {/* Zoom Out */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white hover:bg-white/20"
+                          onClick={() => setZoomLevel(prev => Math.max(50, prev - 25))}
+                          disabled={zoomLevel <= 50}
+                        >
+                          <ZoomOut className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Zoom Out</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Zoom Level */}
+                  <div className="min-w-[60px] text-center">
+                    <span className="text-white text-sm font-medium">{zoomLevel}%</span>
+                  </div>
+
+                  {/* Zoom In */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white hover:bg-white/20"
+                          onClick={() => setZoomLevel(prev => Math.min(300, prev + 25))}
+                          disabled={zoomLevel >= 300}
+                        >
+                          <ZoomIn className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Zoom In</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Right Controls */}
+                <div className="flex items-center gap-2">
+                  {/* Fullscreen */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white hover:bg-white/20"
+                          onClick={() => setIsFullscreen(!isFullscreen)}
+                        >
+                          {isFullscreen ? (
+                            <Minimize2 className="h-4 w-4" />
+                          ) : (
+                            <Maximize2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Close Button */}
+                  <DialogClose asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-white hover:bg-white/20"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DialogClose>
+                </div>
+              </div>
+
+              {/* Zoom Slider - Mobile Friendly */}
+              <div className="px-1 mt-1">
+                <Slider
+                  value={[zoomLevel]}
+                  onValueChange={([value]) => setZoomLevel(value)}
+                  min={50}
+                  max={300}
+                  step={10}
+                  className="w-full"
+                />
+                <div className="flex justify-between mt-1 px-1">
+                  <span className="text-xs text-white/70">50%</span>
+                  <span className="text-xs text-white/70">Zoom</span>
+                  <span className="text-xs text-white/70">300%</span>
+                </div>
+              </div>
+
+              {/* Quick Zoom Presets */}
+              <div className="flex justify-center gap-2 mt-2">
+                {[100, 150, 200].map((preset) => (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white hover:bg-white/20"
-                    onClick={() => setZoomLevel(prev => Math.min(300, prev + 25))}
-                    disabled={zoomLevel >= 300}
+                    key={preset}
+                    variant="outline"
+                    size="sm"
+                    className={`h-7 text-xs ${zoomLevel === preset ? 'bg-white text-black' : 'text-white border-white/30'}`}
+                    onClick={() => setZoomLevel(preset)}
                   >
-                    <ZoomIn className="h-4 w-4" />
+                    {preset}%
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>Zoom In</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                ))}
+              </div>
+            </div>
           </div>
-
-          {/* Right Controls */}
-          <div className="flex items-center gap-2">
-            {/* Fullscreen */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white hover:bg-white/20"
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                  >
-                    {isFullscreen ? (
-                      <Minimize2 className="h-4 w-4" />
-                    ) : (
-                      <Maximize2 className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Close Button */}
-            <DialogClose asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-white hover:bg-white/20"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogClose>
-          </div>
-        </div>
-
-        {/* Zoom Slider - Mobile Friendly */}
-        <div className="px-1 mt-1">
-          <Slider
-            value={[zoomLevel]}
-            onValueChange={([value]) => setZoomLevel(value)}
-            min={50}
-            max={300}
-            step={10}
-            className="w-full"
-          />
-          <div className="flex justify-between mt-1 px-1">
-            <span className="text-xs text-white/70">50%</span>
-            <span className="text-xs text-white/70">Zoom</span>
-            <span className="text-xs text-white/70">300%</span>
-          </div>
-        </div>
-
-        {/* Quick Zoom Presets */}
-        <div className="flex justify-center gap-2 mt-2">
-          {[100, 150, 200].map((preset) => (
-            <Button
-              key={preset}
-              variant="outline"
-              size="sm"
-              className={`h-7 text-xs ${zoomLevel === preset ? 'bg-white text-black' : 'text-white border-white/30'}`}
-              onClick={() => setZoomLevel(preset)}
-            >
-              {preset}%
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

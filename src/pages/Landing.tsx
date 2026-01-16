@@ -289,7 +289,9 @@ export default function Landing() {
                     Create Account
                     <ArrowRight className="w-4 h-4" />
                   </Button>
+               
                 </Link>
+                
               ) : (
                 <>
                   <Link to="/dashboard" className="w-full sm:w-auto">

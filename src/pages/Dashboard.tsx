@@ -45,7 +45,7 @@ export function VerifyBadge({ verified }: { verified?: boolean }) {
   return (
     <Badge
       variant="link"
-      className="gap-1 text-xs text-black-600 border-none bg-black text-white"
+      className="gap-1 text-xs  border-none bg-blue-500 text-white"
     >
       Encrypted
       <CircleCheck className="w-4 h-4" />
